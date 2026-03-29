@@ -4,6 +4,7 @@ import * as physics from './physics';
 import * as grid from './grid';
 import * as multiplayer from './multiplayer';
 import * as profiles from './profiles';
+import { calculateRewards, updateProfileAfterGame } from './progression';
 import { showScreen } from './app';
 
 // ---------------------------------------------------------------------------
@@ -152,10 +153,23 @@ function handleGameEnd(): void {
 
   if (!currentGame) return;
 
-  // Stub rewards — Task 7 will implement real progression
-  const rewards = { xp: 50, coins: 25 };
+  const game = currentGame;
 
-  showResultScreen(currentGame.players, rewards);
+  // Find the local player's finish data
+  const myPlayer = game.players.find(p => p.id === currentPlayerId);
+  const finishPosition = myPlayer?.finish_position ?? game.players.length;
+  const noCrash = myPlayer?.status !== 'crashed';
+  const totalTurns = game.current_turn;
+  const won = finishPosition === 1;
+
+  const rewards = calculateRewards(finishPosition, noCrash, totalTurns);
+
+  // Persist to Supabase (fire-and-forget — don't block the result screen)
+  updateProfileAfterGame(rewards, won).catch(err => {
+    console.error('updateProfileAfterGame failed:', err);
+  });
+
+  showResultScreen(game.players, rewards);
 }
 
 function showResultScreen(players: Player[], rewards: { xp: number; coins: number }): void {
