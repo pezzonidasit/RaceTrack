@@ -1,8 +1,9 @@
 import type { ScreenId } from './types';
 import * as physics from './physics';
 import * as circuit from './circuit';
+import * as grid from './grid';
 
-(window as any).RaceTrack = { physics, circuit };
+(window as any).RaceTrack = { physics, circuit, grid };
 
 const screens: ScreenId[] = ['home', 'lobby', 'game', 'result', 'shop', 'profile'];
 
