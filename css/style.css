@@ -1,0 +1,106 @@
+:root {
+  --bg-dark: #1a1a2e;
+  --bg-card: #16213e;
+  --bg-surface: #0f3460;
+  --accent: #e94560;
+  --accent-hover: #ff6b81;
+  --text: #eee;
+  --text-muted: #888;
+  --green: #44ff44;
+  --blue: #44aaff;
+  --yellow: #ffaa00;
+  --radius: 12px;
+  --transition: 0.3s ease;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg-dark);
+  color: var(--text);
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  min-height: 100dvh;
+  gap: 16px;
+}
+.screen.active { display: flex; }
+
+h1 { font-size: 2.2rem; }
+h2 { font-size: 1.6rem; }
+
+.btn {
+  padding: 14px 28px;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  min-height: 48px;
+  min-width: 48px;
+}
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-secondary {
+  background: var(--bg-surface);
+  color: var(--text);
+}
+.btn-small {
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--bg-surface);
+  border-radius: var(--radius);
+}
+
+.code-display {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 8px;
+  color: var(--accent);
+  background: var(--bg-card);
+  padding: 16px 32px;
+  border-radius: var(--radius);
+}
+
+.home-nav {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+#game-canvas {
+  width: 100%;
+  flex: 1;
+  touch-action: none;
+}
+
+#game-hud {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 480px) {
+  body { font-size: 0.95rem; }
+  h1 { font-size: 1.7rem; }
+  .btn { padding: 12px 20px; font-size: 1rem; }
+  .code-display { font-size: 1.6rem; letter-spacing: 6px; }
+}

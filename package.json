@@ -1,0 +1,26 @@
+{
+  "name": "racetrack",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build": "esbuild src/app.ts --bundle --outfile=dist/bundle.js --format=iife --target=es2020",
+    "watch": "esbuild src/app.ts --bundle --outfile=dist/bundle.js --format=iife --target=es2020 --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "npx playwright test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "esbuild": "^0.27.4",
+    "typescript": "^6.0.2"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.100.1"
+  }
+}
