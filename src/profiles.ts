@@ -6,7 +6,10 @@ const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
 const LOCAL_NAME_KEY = 'rt_name';
 
-export const supabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Use a fallback placeholder URL so createClient doesn't throw synchronously
+// when real credentials are not configured (e.g. in tests / offline dev).
+const safeUrl = SUPABASE_URL.startsWith('http') ? SUPABASE_URL : 'https://placeholder.supabase.co';
+export const supabase: SupabaseClient = createClient(safeUrl, SUPABASE_ANON_KEY);
 
 // ---------------------------------------------------------------------------
 // Auth

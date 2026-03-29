@@ -481,6 +481,14 @@
   });
 
   // src/types.ts
+  var RANKS = [
+    { name: "Karting", xp: 0 },
+    { name: "Rally", xp: 500 },
+    { name: "F3", xp: 1500 },
+    { name: "F1", xp: 3500 },
+    { name: "Champion", xp: 7e3 },
+    { name: "L\xE9gende", xp: 15e3 }
+  ];
   var PLAYER_COLORS = ["#FF4444", "#44AAFF", "#44FF44", "#FFAA00"];
 
   // src/profiles.ts
@@ -20142,7 +20150,8 @@ ${suffix}`;
   var SUPABASE_URL = "YOUR_SUPABASE_URL";
   var SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
   var LOCAL_NAME_KEY = "rt_name";
-  var supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  var safeUrl = SUPABASE_URL.startsWith("http") ? SUPABASE_URL : "https://placeholder.supabase.co";
+  var supabase = createClient(safeUrl, SUPABASE_ANON_KEY);
   async function initAuth() {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
@@ -20477,8 +20486,417 @@ ${suffix}`;
     };
   }
 
+  // src/game.ts
+  var game_exports = {};
+  __export(game_exports, {
+    handleCreateGame: () => handleCreateGame,
+    handleJoinGame: () => handleJoinGame,
+    initGameScreen: () => initGameScreen,
+    refreshGameState: () => refreshGameState
+  });
+
+  // src/progression.ts
+  var XP_BY_PLACE = [100, 60, 35, 20];
+  var COINS_BY_PLACE = [50, 30, 20, 10];
+  var BONUS_NO_CRASH = 30;
+  var BONUS_FAST_WIN = 20;
+  var FAST_WIN_THRESHOLD = 20;
+  var DAILY_MULTIPLIERS = [1, 1, 1, 0.5, 0.3, 0.1];
+  var LS_DAILY_DATE = "rt_daily_date";
+  var LS_DAILY_COUNT = "rt_daily_count";
+  function calculateRewards(finishPosition, noCrash, totalTurns) {
+    const idx = Math.min(finishPosition - 1, XP_BY_PLACE.length - 1);
+    let xp = XP_BY_PLACE[idx] ?? 0;
+    if (noCrash) xp += BONUS_NO_CRASH;
+    if (finishPosition === 1 && totalTurns < FAST_WIN_THRESHOLD) xp += BONUS_FAST_WIN;
+    const dailyCount = getDailyGameCount();
+    const multiplierIdx = Math.min(dailyCount, DAILY_MULTIPLIERS.length - 1);
+    const multiplier = DAILY_MULTIPLIERS[multiplierIdx] ?? 0.1;
+    const baseCoins = COINS_BY_PLACE[idx] ?? 0;
+    const coins = Math.round(baseCoins * multiplier);
+    return { xp, coins, newRank: null };
+  }
+  function getRankForXp(xp) {
+    let rank = RANKS[0].name;
+    for (const r of RANKS) {
+      if (xp >= r.xp) {
+        rank = r.name;
+      }
+    }
+    return rank;
+  }
+  async function updateProfileAfterGame(rewards, won) {
+    const profile = await getOrCreateProfile();
+    const newXp = profile.xp + rewards.xp;
+    const newCoins = profile.coins + rewards.coins;
+    const newRank = getRankForXp(newXp);
+    const newGamesPlayed = profile.games_played + 1;
+    const newGamesWon = won ? profile.games_won + 1 : profile.games_won;
+    await updateProfile({
+      xp: newXp,
+      coins: newCoins,
+      rank: newRank,
+      games_played: newGamesPlayed,
+      games_won: newGamesWon
+    });
+    incrementDailyGameCount();
+  }
+  function getDailyGameCount() {
+    const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+    const storedDate = localStorage.getItem(LS_DAILY_DATE);
+    if (storedDate !== today) {
+      localStorage.setItem(LS_DAILY_DATE, today);
+      localStorage.setItem(LS_DAILY_COUNT, "0");
+      return 0;
+    }
+    const count = parseInt(localStorage.getItem(LS_DAILY_COUNT) ?? "0", 10);
+    return isNaN(count) ? 0 : count;
+  }
+  function incrementDailyGameCount() {
+    const count = getDailyGameCount();
+    localStorage.setItem(LS_DAILY_COUNT, String(count + 1));
+  }
+
+  // src/game.ts
+  var currentGame = null;
+  var currentPlayerId = null;
+  var currentMoves = null;
+  var unsubscribe = null;
+  function initGameScreen() {
+    const canvas2 = document.getElementById("game-canvas");
+    if (!canvas2) {
+      console.error("initGameScreen: #game-canvas not found");
+      return;
+    }
+    initGrid(canvas2);
+    canvas2.addEventListener("click", handleCanvasTap);
+  }
+  function handleCanvasTap(e) {
+    if (!currentGame || !currentPlayerId || !currentMoves) return;
+    const myPlayer = currentGame.players.find((p) => p.id === currentPlayerId);
+    if (!myPlayer) return;
+    const currentPlayer = currentGame.players[currentGame.current_player_index];
+    if (!currentPlayer || currentPlayer.id !== currentPlayerId) return;
+    if (myPlayer.status !== "alive") return;
+    const canvas2 = e.currentTarget;
+    const rect = canvas2.getBoundingClientRect();
+    const screenX = e.clientX - rect.left;
+    const screenY = e.clientY - rect.top;
+    const gridCoord = screenToGrid(screenX, screenY);
+    const move = currentMoves.find(
+      (m) => m.target.x === gridCoord.x && m.target.y === gridCoord.y
+    );
+    if (!move) return;
+    executeMove(move).catch((err) => {
+      console.error("executeMove failed:", err);
+    });
+  }
+  async function executeMove(move) {
+    if (!currentGame || !currentPlayerId) return;
+    const myPlayer = currentGame.players.find((p) => p.id === currentPlayerId);
+    if (!myPlayer) return;
+    const result = calculateNewPosition(myPlayer.position, myPlayer.velocity, move.acceleration);
+    const collision = checkCollision(myPlayer.position, result.newPosition, currentGame.circuit.cells);
+    try {
+      await submitMove(
+        currentGame.id,
+        currentPlayerId,
+        move.acceleration,
+        result.newPosition,
+        result.newVelocity,
+        collision.crashed,
+        currentGame.current_turn
+      );
+    } catch (err) {
+      console.error("submitMove failed:", err);
+      return;
+    }
+    await refreshGameState();
+  }
+  async function refreshGameState() {
+    if (!currentGame) return;
+    try {
+      currentGame = await getGameState(currentGame.id);
+    } catch (err) {
+      console.error("refreshGameState failed:", err);
+      return;
+    }
+    if (currentGame.status === "finished") {
+      handleGameEnd();
+      return;
+    }
+    const currentPlayer = currentGame.players[currentGame.current_player_index];
+    const isMyTurn = !!currentPlayerId && !!currentPlayer && currentPlayer.id === currentPlayerId;
+    if (isMyTurn && currentPlayer) {
+      currentMoves = getPossibleMoves(currentPlayer.position, currentPlayer.velocity);
+      centerOnPlayer(currentPlayer);
+    } else {
+      currentMoves = [];
+    }
+    const myPlayer = currentGame.players.find((p) => p.id === currentPlayerId);
+    const playerName = myPlayer?.name ?? "";
+    const turnLabel = `Tour ${currentGame.current_turn + 1}`;
+    updateHUD(playerName, turnLabel, isMyTurn);
+    render(
+      currentGame.circuit,
+      currentGame.players,
+      currentMoves,
+      currentPlayerId ?? ""
+    );
+  }
+  function updateHUD(playerName, turn, isMyTurn) {
+    const hudTurn = document.getElementById("hud-turn");
+    const hudPlayer = document.getElementById("hud-player");
+    if (hudTurn) {
+      hudTurn.textContent = turn;
+    }
+    if (hudPlayer) {
+      hudPlayer.textContent = isMyTurn ? `${playerName} \u2014 \xE0 vous de jouer!` : `${playerName} \u2014 en attente\u2026`;
+    }
+  }
+  function handleGameEnd() {
+    if (unsubscribe) {
+      unsubscribe();
+      unsubscribe = null;
+    }
+    if (!currentGame) return;
+    const game = currentGame;
+    const myPlayer = game.players.find((p) => p.id === currentPlayerId);
+    const finishPosition = myPlayer?.finish_position ?? game.players.length;
+    const noCrash = myPlayer?.status !== "crashed";
+    const totalTurns = game.current_turn;
+    const won = finishPosition === 1;
+    const rewards = calculateRewards(finishPosition, noCrash, totalTurns);
+    updateProfileAfterGame(rewards, won).catch((err) => {
+      console.error("updateProfileAfterGame failed:", err);
+    });
+    showResultScreen(game.players, rewards);
+  }
+  function showResultScreen(players, rewards) {
+    const rankingEl = document.getElementById("result-ranking");
+    const rewardsEl = document.getElementById("result-rewards");
+    if (rankingEl) {
+      const finished = players.filter((p) => p.finish_position !== null).sort((a, b) => (a.finish_position ?? 99) - (b.finish_position ?? 99));
+      const others = players.filter((p) => p.finish_position === null);
+      const sorted = [...finished, ...others];
+      rankingEl.innerHTML = sorted.map((p, i) => {
+        const pos = p.finish_position ?? "\u2014";
+        const medal = i === 0 ? "\u{1F947}" : i === 1 ? "\u{1F948}" : i === 2 ? "\u{1F949}" : `${i + 1}.`;
+        return `<div class="result-row">
+        <span class="result-medal">${medal}</span>
+        <span class="result-dot" style="background:${p.color}"></span>
+        <span class="result-name">${p.name}</span>
+        <span class="result-pos">${pos}</span>
+      </div>`;
+      }).join("");
+    }
+    if (rewardsEl) {
+      rewardsEl.innerHTML = `
+      <div class="rewards-title">R\xE9compenses</div>
+      <div class="rewards-row">+${rewards.xp} XP &nbsp; +${rewards.coins} coins</div>
+    `;
+    }
+    showScreen("result");
+  }
+  async function handleCreateGame() {
+    try {
+      let name = getLocalName();
+      if (!name) {
+        name = prompt("Votre pseudo?") ?? "";
+        if (!name.trim()) return;
+        setLocalName(name.trim());
+      }
+      const userId = getUserId();
+      const { gameId, code } = await createGame();
+      const { playerId } = await joinGame(code, name, userId);
+      currentGame = await getGameState(gameId);
+      currentPlayerId = playerId;
+      showLobby(gameId, code, true);
+    } catch (err) {
+      console.error("handleCreateGame failed:", err);
+      alert(`Erreur: ${err.message}`);
+    }
+  }
+  async function handleJoinGame() {
+    try {
+      let name = getLocalName();
+      if (!name) {
+        name = prompt("Votre pseudo?") ?? "";
+        if (!name.trim()) return;
+        setLocalName(name.trim());
+      }
+      const code = prompt("Code de la partie?") ?? "";
+      if (!code.trim()) return;
+      const userId = getUserId();
+      const { gameId, playerId } = await joinGame(code.trim().toUpperCase(), name, userId);
+      currentGame = await getGameState(gameId);
+      currentPlayerId = playerId;
+      showLobby(gameId, currentGame.code, false);
+    } catch (err) {
+      console.error("handleJoinGame failed:", err);
+      alert(`Erreur: ${err.message}`);
+    }
+  }
+  function showLobby(gameId, code, isCreator) {
+    const codeEl = document.getElementById("lobby-code");
+    if (codeEl) {
+      codeEl.textContent = `Code: ${code}`;
+    }
+    const startBtn = document.getElementById("btn-start");
+    if (startBtn) {
+      startBtn.style.display = isCreator ? "" : "none";
+      startBtn.onclick = async () => {
+        try {
+          await startGame(gameId);
+        } catch (err) {
+          console.error("startGame failed:", err);
+          alert(`Erreur: ${err.message}`);
+        }
+      };
+    }
+    if (unsubscribe) {
+      unsubscribe();
+    }
+    unsubscribe = subscribeToGame(gameId, async (_event, _table, _record) => {
+      if (!currentGame) return;
+      try {
+        currentGame = await getGameState(gameId);
+      } catch {
+        return;
+      }
+      if (currentGame.status === "playing") {
+        showScreen("game");
+        initGameScreen();
+        await refreshGameState();
+        return;
+      }
+      renderLobbyPlayers(currentGame.players);
+    });
+    if (currentGame) {
+      renderLobbyPlayers(currentGame.players);
+    }
+    showScreen("lobby");
+  }
+  function renderLobbyPlayers(players) {
+    const el = document.getElementById("lobby-players");
+    if (!el) return;
+    el.innerHTML = players.map((p) => `
+    <div class="lobby-player">
+      <span class="lobby-dot" style="background:${p.color}"></span>
+      <span class="lobby-name">${p.name}</span>
+    </div>
+  `).join("");
+  }
+
+  // src/shop.ts
+  var SHOP_CATALOG = [
+    // Skins (price 0 = free/default)
+    { id: "skin-red", name: "Rouge Feu", category: "skin", price: 0, rarity: "common", emoji: "\u{1F534}" },
+    { id: "skin-blue", name: "Bleu Glace", category: "skin", price: 0, rarity: "common", emoji: "\u{1F535}" },
+    { id: "skin-rocket", name: "Fus\xE9e", category: "skin", price: 100, rarity: "rare", emoji: "\u{1F680}" },
+    { id: "skin-f1", name: "Formule 1", category: "skin", price: 150, rarity: "rare", emoji: "\u{1F3CE}\uFE0F" },
+    { id: "skin-moto", name: "Superbike", category: "skin", price: 200, rarity: "epic", emoji: "\u{1F3CD}\uFE0F" },
+    // Trails
+    { id: "trail-dots", name: "Pointill\xE9s", category: "trail", price: 0, rarity: "common", emoji: "\xB7\xB7\xB7" },
+    { id: "trail-fire", name: "Flammes", category: "trail", price: 150, rarity: "rare", emoji: "\u{1F525}" },
+    { id: "trail-stars", name: "\xC9toiles", category: "trail", price: 200, rarity: "rare", emoji: "\u2B50" },
+    { id: "trail-rainbow", name: "Arc-en-ciel", category: "trail", price: 300, rarity: "epic", emoji: "\u{1F308}" },
+    // Themes
+    { id: "theme-asphalt", name: "Asphalte", category: "theme", price: 0, rarity: "common", emoji: "\u{1F6E3}\uFE0F" },
+    { id: "theme-snow", name: "Neige", category: "theme", price: 250, rarity: "rare", emoji: "\u2744\uFE0F" },
+    { id: "theme-space", name: "Espace", category: "theme", price: 400, rarity: "epic", emoji: "\u{1F30C}" },
+    { id: "theme-lava", name: "Lave", category: "theme", price: 500, rarity: "epic", emoji: "\u{1F30B}" }
+  ];
+  function isOwned(profile, item) {
+    if (item.price === 0) return true;
+    if (item.category === "skin") return profile.owned_skins.includes(item.id);
+    if (item.category === "trail") return profile.owned_trails.includes(item.id);
+    if (item.category === "theme") return profile.owned_themes.includes(item.id);
+    return false;
+  }
+  function categoryLabel(cat) {
+    switch (cat) {
+      case "skin":
+        return "V\xE9hicules";
+      case "trail":
+        return "Tra\xEEn\xE9es";
+      case "theme":
+        return "Pistes";
+    }
+  }
+  async function buyItem(itemId) {
+    const item = SHOP_CATALOG.find((i) => i.id === itemId);
+    if (!item) return;
+    const profile = await getOrCreateProfile();
+    if (isOwned(profile, item)) return;
+    if (profile.coins < item.price) {
+      alert(`Pas assez de pi\xE8ces ! Il te faut ${item.price} \u{1FA99} (tu as ${profile.coins} \u{1FA99})`);
+      return;
+    }
+    const updates = {
+      coins: profile.coins - item.price
+    };
+    if (item.category === "skin") {
+      updates.owned_skins = [...profile.owned_skins, item.id];
+    } else if (item.category === "trail") {
+      updates.owned_trails = [...profile.owned_trails, item.id];
+    } else if (item.category === "theme") {
+      updates.owned_themes = [...profile.owned_themes, item.id];
+    }
+    await updateProfile(updates);
+    await renderShop();
+  }
+  async function renderShop() {
+    const container = document.getElementById("shop-container");
+    if (!container) return;
+    const profile = await getOrCreateProfile();
+    const categories = ["skin", "trail", "theme"];
+    let html = `<div id="shop-coins">\u{1FA99} ${profile.coins} pi\xE8ces</div>`;
+    for (const cat of categories) {
+      const items = SHOP_CATALOG.filter((i) => i.category === cat);
+      html += `<h3 style="margin-top:16px;margin-bottom:4px;color:var(--text-muted);font-size:0.85rem;text-transform:uppercase;letter-spacing:1px;">${categoryLabel(cat)}</h3>`;
+      html += `<div id="shop-grid">`;
+      for (const item of items) {
+        const owned = isOwned(profile, item);
+        const canAfford = profile.coins >= item.price;
+        const isFree = item.price === 0;
+        let btnLabel;
+        let btnDisabled;
+        if (owned) {
+          btnLabel = isFree ? "Gratuit" : "Achet\xE9";
+          btnDisabled = true;
+        } else if (!canAfford) {
+          btnLabel = `${item.price} \u{1FA99}`;
+          btnDisabled = true;
+        } else {
+          btnLabel = `${item.price} \u{1FA99}`;
+          btnDisabled = false;
+        }
+        html += `
+        <div class="shop-item${owned ? " owned" : ""}">
+          <div class="shop-emoji">${item.emoji}</div>
+          <div class="shop-name">${item.name}</div>
+          <div class="shop-price rarity-${item.rarity}">${item.rarity}</div>
+          <button
+            class="btn btn-small shop-buy"
+            data-item-id="${item.id}"
+            ${btnDisabled ? "disabled" : ""}
+          >${btnLabel}</button>
+        </div>
+      `;
+      }
+      html += `</div>`;
+    }
+    container.innerHTML = html;
+    container.querySelectorAll(".shop-buy:not([disabled])").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const itemId = btn.dataset.itemId;
+        if (itemId) buyItem(itemId).catch(console.error);
+      });
+    });
+  }
+
   // src/app.ts
-  window.RaceTrack = { physics: physics_exports, circuit: circuit_exports, grid: grid_exports, multiplayer: multiplayer_exports, profiles: profiles_exports };
   var screens = ["home", "lobby", "game", "result", "shop", "profile"];
   function showScreen(id) {
     screens.forEach((s) => {
@@ -20488,17 +20906,61 @@ ${suffix}`;
       }
     });
   }
+  function updateHomeProfile(profile) {
+    const el = document.getElementById("home-profile");
+    if (!el) return;
+    el.innerHTML = `
+    <div class="home-profile-name">${profile.name}</div>
+    <div class="home-profile-stats">
+      <span class="home-profile-rank">${profile.rank}</span>
+      <span class="home-profile-xp">${profile.xp} XP</span>
+      <span class="home-profile-coins">${profile.coins} \u{1FA99}</span>
+    </div>
+  `;
+  }
   async function init() {
+    document.getElementById("btn-create")?.addEventListener("click", () => {
+      handleCreateGame().catch(console.error);
+    });
+    document.getElementById("btn-join")?.addEventListener("click", () => {
+      handleJoinGame().catch(console.error);
+    });
+    document.getElementById("btn-home")?.addEventListener("click", () => {
+      showScreen("home");
+    });
+    document.getElementById("btn-shop")?.addEventListener("click", () => {
+      showScreen("shop");
+      renderShop().catch(console.error);
+    });
+    document.getElementById("btn-shop-back")?.addEventListener("click", () => {
+      showScreen("home");
+    });
+    document.getElementById("btn-profile")?.addEventListener("click", () => {
+      showScreen("profile");
+    });
+    document.getElementById("btn-profile-back")?.addEventListener("click", () => {
+      showScreen("home");
+    });
+    document.getElementById("btn-leave")?.addEventListener("click", () => {
+      showScreen("home");
+    });
+    showScreen("home");
+    console.log("RaceTrack v1 initialized");
     try {
       await initAuth();
       console.log("RaceTrack auth initialized");
     } catch (err) {
       console.warn("Auth init failed (offline?):", err);
     }
-    showScreen("home");
-    console.log("RaceTrack v1 initialized");
+    try {
+      const profile = await getOrCreateProfile();
+      updateHomeProfile(profile);
+    } catch (err) {
+      console.warn("Profile load failed:", err);
+    }
   }
   document.addEventListener("DOMContentLoaded", () => {
     init().catch(console.error);
   });
+  window.RaceTrack = { physics: physics_exports, circuit: circuit_exports, grid: grid_exports, multiplayer: multiplayer_exports, profiles: profiles_exports, game: game_exports, showScreen };
 })();

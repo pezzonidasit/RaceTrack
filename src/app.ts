@@ -45,22 +45,7 @@ function updateHomeProfile(profile: Profile): void {
 // ---------------------------------------------------------------------------
 
 async function init(): Promise<void> {
-  try {
-    await profiles.initAuth();
-    console.log('RaceTrack auth initialized');
-  } catch (err) {
-    console.warn('Auth init failed (offline?):', err);
-  }
-
-  // Load profile and update home screen
-  try {
-    const profile = await profiles.getOrCreateProfile();
-    updateHomeProfile(profile);
-  } catch (err) {
-    console.warn('Profile load failed:', err);
-  }
-
-  // Wire button handlers
+  // Wire button handlers first (before async work so UI is responsive immediately)
   document.getElementById('btn-create')?.addEventListener('click', () => {
     game.handleCreateGame().catch(console.error);
   });
@@ -96,6 +81,21 @@ async function init(): Promise<void> {
 
   showScreen('home');
   console.log('RaceTrack v1 initialized');
+
+  // Async auth + profile (non-blocking — UI is already wired above)
+  try {
+    await profiles.initAuth();
+    console.log('RaceTrack auth initialized');
+  } catch (err) {
+    console.warn('Auth init failed (offline?):', err);
+  }
+
+  try {
+    const profile = await profiles.getOrCreateProfile();
+    updateHomeProfile(profile);
+  } catch (err) {
+    console.warn('Profile load failed:', err);
+  }
 }
 
 // ---------------------------------------------------------------------------
