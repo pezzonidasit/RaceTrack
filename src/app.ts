@@ -5,6 +5,7 @@ import * as grid from './grid';
 import * as multiplayer from './multiplayer';
 import * as profiles from './profiles';
 import * as game from './game';
+import { renderShop } from './shop';
 
 // ---------------------------------------------------------------------------
 // Screen routing
@@ -74,6 +75,7 @@ async function init(): Promise<void> {
 
   document.getElementById('btn-shop')?.addEventListener('click', () => {
     showScreen('shop');
+    renderShop().catch(console.error);
   });
 
   document.getElementById('btn-shop-back')?.addEventListener('click', () => {

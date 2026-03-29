@@ -106,3 +106,37 @@ h2 { font-size: 1.6rem; }
   .btn { padding: 12px 20px; font-size: 1rem; }
   .code-display { font-size: 1.6rem; letter-spacing: 6px; }
 }
+
+/* ---- Shop ---- */
+#shop-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 400px;
+  padding: 16px 0;
+}
+.shop-item {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+.shop-item.owned { opacity: 0.6; }
+.shop-emoji { font-size: 2rem; }
+.shop-name { font-weight: 600; }
+.shop-price { color: var(--yellow); font-size: 0.9rem; }
+.shop-buy:disabled { opacity: 0.4; cursor: not-allowed; }
+#shop-coins {
+  font-size: 1.3rem;
+  color: var(--yellow);
+  font-weight: 600;
+  text-align: center;
+}
+.rarity-common { color: var(--text-muted); }
+.rarity-rare { color: var(--blue); }
+.rarity-epic { color: var(--accent); }
