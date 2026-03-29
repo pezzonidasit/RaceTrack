@@ -78,4 +78,15 @@ export const RANKS = [
   { name: 'Légende', xp: 15000 },
 ] as const;
 
-export const PLAYER_COLORS = ['#FF4444', '#44AAFF', '#44FF44', '#FFAA00'];
+export const PLAYER_COLORS = ['#FF4444', '#44AAFF', '#44FF44', '#FFAA00'] as const;
+
+export type RankName = typeof RANKS[number]['name'];
+export type PlayerColor = typeof PLAYER_COLORS[number];
+
+export function isValidRank(name: string): name is RankName {
+  return RANKS.some(r => r.name === name);
+}
+
+export function isValidColor(color: string): color is PlayerColor {
+  return PLAYER_COLORS.includes(color as PlayerColor);
+}

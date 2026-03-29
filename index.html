@@ -9,54 +9,57 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  <div id="screen-home" class="screen active">
-    <h1>🏎️ RaceTrack</h1>
-    <div id="home-profile"></div>
-    <button id="btn-create" class="btn btn-primary">Créer une course</button>
-    <button id="btn-join" class="btn btn-secondary">Rejoindre</button>
-    <div class="home-nav">
-      <button id="btn-shop" class="btn btn-small">Shop</button>
-      <button id="btn-profile" class="btn btn-small">Profil</button>
-    </div>
-  </div>
+  <main id="app">
+    <!-- Screen routing: showScreen() in src/app.ts toggles .active class -->
+    <section id="screen-home" class="screen active" aria-label="Home">
+      <h1>🏎️ RaceTrack</h1>
+      <div id="home-profile"></div>
+      <button id="btn-create" class="btn btn-primary">Créer une course</button>
+      <button id="btn-join" class="btn btn-secondary">Rejoindre</button>
+      <div class="home-nav">
+        <button id="btn-shop" class="btn btn-small">Shop</button>
+        <button id="btn-profile" class="btn btn-small">Profil</button>
+      </div>
+    </section>
 
-  <div id="screen-lobby" class="screen">
-    <h2>Lobby</h2>
-    <div id="lobby-code" class="code-display"></div>
-    <div id="lobby-players"></div>
-    <button id="btn-start" class="btn btn-primary" style="display:none">Lancer la course!</button>
-    <button id="btn-leave" class="btn btn-secondary">Quitter</button>
-  </div>
+    <section id="screen-lobby" class="screen" aria-label="Lobby">
+      <h2>Lobby</h2>
+      <div id="lobby-code" class="code-display"></div>
+      <div id="lobby-players"></div>
+      <button id="btn-start" class="btn btn-primary" style="display:none">Lancer la course!</button>
+      <button id="btn-leave" class="btn btn-secondary">Quitter</button>
+    </section>
 
-  <div id="screen-game" class="screen">
-    <div id="game-hud">
-      <span id="hud-turn"></span>
-      <span id="hud-player"></span>
-    </div>
-    <canvas id="game-canvas"></canvas>
-    <div id="game-status"></div>
-  </div>
+    <section id="screen-game" class="screen" aria-label="Game">
+      <div id="game-hud">
+        <span id="hud-turn"></span>
+        <span id="hud-player"></span>
+      </div>
+      <canvas id="game-canvas"></canvas>
+      <div id="game-status"></div>
+    </section>
 
-  <div id="screen-result" class="screen">
-    <h2>Résultats</h2>
-    <div id="result-ranking"></div>
-    <div id="result-rewards"></div>
-    <button id="btn-home" class="btn btn-primary">Retour</button>
-  </div>
+    <section id="screen-result" class="screen" aria-label="Results">
+      <h2>Résultats</h2>
+      <div id="result-ranking"></div>
+      <div id="result-rewards"></div>
+      <button id="btn-home" class="btn btn-primary">Retour</button>
+    </section>
 
-  <div id="screen-shop" class="screen">
-    <h2>Shop</h2>
-    <div id="shop-coins"></div>
-    <div id="shop-grid"></div>
-    <button id="btn-shop-back" class="btn btn-secondary">Retour</button>
-  </div>
+    <section id="screen-shop" class="screen" aria-label="Shop">
+      <h2>Shop</h2>
+      <div id="shop-coins"></div>
+      <div id="shop-grid"></div>
+      <button id="btn-shop-back" class="btn btn-secondary">Retour</button>
+    </section>
 
-  <div id="screen-profile" class="screen">
-    <h2>Profil</h2>
-    <div id="profile-stats"></div>
-    <div id="profile-history"></div>
-    <button id="btn-profile-back" class="btn btn-secondary">Retour</button>
-  </div>
+    <section id="screen-profile" class="screen" aria-label="Profile">
+      <h2>Profil</h2>
+      <div id="profile-stats"></div>
+      <div id="profile-history"></div>
+      <button id="btn-profile-back" class="btn btn-secondary">Retour</button>
+    </section>
+  </main>
 
   <script src="dist/bundle.js"></script>
 </body>

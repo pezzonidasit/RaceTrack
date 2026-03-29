@@ -5,7 +5,9 @@ const screens: ScreenId[] = ['home', 'lobby', 'game', 'result', 'shop', 'profile
 export function showScreen(id: ScreenId): void {
   screens.forEach(s => {
     const el = document.getElementById(`screen-${s}`);
-    if (el) el.classList.toggle('active', s === id);
+    if (el) {
+      el.classList.toggle('active', s === id);
+    }
   });
 }
 
