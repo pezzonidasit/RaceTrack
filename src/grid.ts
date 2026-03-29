@@ -45,6 +45,8 @@ function resizeCanvas(): void {
   if (!canvas) return;
   const dpr = window.devicePixelRatio || 1;
   const { width, height } = canvas.getBoundingClientRect();
+  // Assigning canvas.width/height resets the context transform to identity,
+  // so ctx.scale(dpr, dpr) is always applied on a clean state.
   canvas.width = width * dpr;
   canvas.height = height * dpr;
   if (ctx) {
@@ -156,13 +158,9 @@ export function render(
   circuit: Circuit,
   players: Player[],
   possibleMoves: MoveOption[],
-  currentPlayerId: string
+  _currentPlayerId: string  // reserved: future highlight for current player
 ): void {
   if (!canvas || !ctx) return;
-
-  const dpr = window.devicePixelRatio || 1;
-  const cssWidth  = canvas.width / dpr;
-  const cssHeight = canvas.height / dpr;
 
   // Clear
   ctx.save();
@@ -205,8 +203,6 @@ export function render(
   }
 
   // --- Draw possible moves ---
-  const possibleSet = new Set(possibleMoves.map(m => `${m.target.x},${m.target.y}`));
-
   for (const move of possibleMoves) {
     const px = move.target.x * cellW;
     const py = move.target.y * cellH;
@@ -251,6 +247,7 @@ export function render(
     ctx.shadowBlur = 3;
     ctx.fillStyle = '#ffffff';
     ctx.fillText(player.name, cx, cy - radius - 2);
+    ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
   }
 
