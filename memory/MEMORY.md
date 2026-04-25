@@ -1,0 +1,2 @@
+- [Project status](project_status.md) — V1 implémentée, déployée GitHub Pages, Supabase à configurer
+- [Deploy setup](reference_deploy.md) — GitHub repo, subtree push, GitHub Pages workflow

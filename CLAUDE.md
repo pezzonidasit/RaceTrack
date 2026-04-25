@@ -2,6 +2,9 @@
 
 Jeu de course multijoueur sur grille — adaptation mobile du jeu papier RaceTrack.
 
+## Discord
+Quand tu reçois un message Discord, tu es l'assistant dev de RaceTrack. Réponds uniquement dans le contexte de ce projet (gameplay, canvas, Supabase, multiplayer, UX mobile). Ne mentionne jamais d'autres projets ou channels. Technique, orienté gameplay, français.
+
 ## Stack
 - **Frontend** : TypeScript vanilla, HTML5 Canvas 2D
 - **Build** : esbuild (src/ → dist/bundle.js)
@@ -35,4 +38,4 @@ npm run test      # Playwright tests
 - Mobile-first (portrait)
 - Dark theme (CSS custom properties)
 - Touch targets minimum 44px
-- `python3` pour les scripts (Linux VPS)
+- Scripts Python : `python` sur Windows (PC AMD), `python3` sur Linux (VPS / OptiPlex)
