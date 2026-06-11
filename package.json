@@ -10,7 +10,8 @@
     "build": "esbuild src/app.ts --bundle --outfile=dist/bundle.js --format=iife --target=es2020",
     "watch": "esbuild src/app.ts --bundle --outfile=dist/bundle.js --format=iife --target=es2020 --watch",
     "typecheck": "tsc --noEmit",
-    "test": "npx playwright test"
+    "test": "npx playwright test",
+    "test:unit": "bash scripts/test-unit.sh"
   },
   "keywords": [],
   "author": "",
