@@ -15,10 +15,11 @@ Quand tu reçois un message Discord, tu es l'assistant dev de RaceTrack. Répond
 
 ## Commandes
 ```bash
-npm run build     # Build once
-npm run watch     # Build + watch
-npm run typecheck # Type checking
-npm run test      # Playwright tests
+npm run build      # Build once
+npm run watch      # Build + watch
+npm run typecheck  # Type checking
+npm run test       # Playwright tests (navigateur, nécessite un serveur)
+npm run test:unit  # Tests unitaires hermétiques (node --test, ~1.3s, aucun réseau)
 ```
 
 ## Structure
