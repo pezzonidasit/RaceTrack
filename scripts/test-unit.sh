@@ -3,12 +3,11 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DIST="$ROOT/dist/test-unit"
 ESBUILD="$ROOT/node_modules/.bin/esbuild"
 
-# Clean previous compiled tests
-rm -rf "$DIST"
-mkdir -p "$DIST"
+# Create a per-invocation temp directory (avoid race on shared dist/test-unit/)
+DIST="$(mktemp -d /tmp/racetrack-test-unit-XXXXXX)"
+trap 'rm -rf "$DIST"' EXIT
 
 # Compile each unit test file to CJS
 for f in "$ROOT"/tests/unit/*.test.ts; do
@@ -22,5 +21,14 @@ for f in "$ROOT"/tests/unit/*.test.ts; do
     --log-level=error
 done
 
+# Check for compiled tests and fail clearly if none found
+shopt -s nullglob
+js_files=("$DIST"/*.js)
+shopt -u nullglob
+if [[ ${#js_files[@]} -eq 0 ]]; then
+  echo "ERROR: aucun test compilé dans $DIST (esbuild a-t-il échoué silencieusement ?)" >&2
+  exit 1
+fi
+
 # Run all compiled tests with node --test
-node --test "$DIST"/*.js
+node --test "${js_files[@]}"

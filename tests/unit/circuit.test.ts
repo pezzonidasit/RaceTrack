@@ -131,7 +131,7 @@ describe('validateCircuit — circuits invalides', () => {
     //
     // Grille 12×3 :
     //   col 0..3  : track (zone start)
-    //   col 4..7  : murs (bande épaisse, infranchissable même en ±2)
+    //   col 4..7  : murs (bande de 4 cellules — infranchissable : depuis col 3, ±2 max atteint col 5, encore un mur)
     //   col 8..11 : track (zone finish)
     const width = 12;
     const height = 3;
