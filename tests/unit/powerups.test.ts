@@ -10,6 +10,7 @@ import {
   findPowerUpAt,
   boostedVelocity,
   teleportPosition,
+  activeEffectIndicators,
   resolveMove,
 } from '../../src/powerups';
 import { validateCircuit } from '../../src/circuit';
@@ -367,5 +368,37 @@ describe('resolveMove — ramassage et activation', () => {
     assert.strictEqual(result.pickedUp!.type, 'teleport');
     // index 2 + jumpCells(4) = index 6 → (7,2)
     assert.deepStrictEqual(result.position, { x: 7, y: 2 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// activeEffectIndicators — descripteurs d'affichage pour le HUD
+// ---------------------------------------------------------------------------
+
+describe('activeEffectIndicators', () => {
+  it('état vide → aucun indicateur', () => {
+    assert.deepStrictEqual(activeEffectIndicators(emptyState()), []);
+  });
+
+  it('boost actif → indicateur avec tours restants', () => {
+    const out = activeEffectIndicators({ boostTurnsLeft: 2, shieldCharges: 0 });
+    assert.strictEqual(out.length, 1);
+    assert.strictEqual(out[0].type, 'boost');
+    assert.ok(out[0].text.includes('2'));
+  });
+
+  it('bouclier actif → indicateur avec charges', () => {
+    const out = activeEffectIndicators({ boostTurnsLeft: 0, shieldCharges: 1 });
+    assert.strictEqual(out.length, 1);
+    assert.strictEqual(out[0].type, 'shield');
+    assert.ok(out[0].text.includes('1'));
+  });
+
+  it('boost + bouclier actifs → deux indicateurs', () => {
+    const out = activeEffectIndicators({ boostTurnsLeft: 3, shieldCharges: 2 });
+    assert.strictEqual(out.length, 2);
+    const types = out.map(o => o.type);
+    assert.ok(types.includes('boost'));
+    assert.ok(types.includes('shield'));
   });
 });

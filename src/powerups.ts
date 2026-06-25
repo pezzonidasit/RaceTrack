@@ -308,3 +308,28 @@ export function resolveMove(input: ResolveInput): ResolveResult {
     powerups: remaining,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Display helpers (HUD active-effect indicator)
+// ---------------------------------------------------------------------------
+
+export interface EffectIndicator {
+  type: PowerUpType;
+  text: string;
+}
+
+/**
+ * Build the list of active-effect indicators to surface in the HUD: a boost
+ * shows its remaining turns, a shield shows its remaining charges. Inactive
+ * effects produce no entry.
+ */
+export function activeEffectIndicators(state: PowerUpState): EffectIndicator[] {
+  const out: EffectIndicator[] = [];
+  if (state.boostTurnsLeft > 0) {
+    out.push({ type: 'boost', text: `${POWERUP_EFFECTS.boost.label} ${state.boostTurnsLeft}` });
+  }
+  if (state.shieldCharges > 0) {
+    out.push({ type: 'shield', text: `${POWERUP_EFFECTS.shield.label} ${state.shieldCharges}` });
+  }
+  return out;
+}

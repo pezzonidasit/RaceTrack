@@ -292,6 +292,11 @@
     start: "#3a5a3a",
     finish: "#5a3a3a"
   };
+  var POWERUP_STYLE = {
+    boost: { color: "#FFD23F", glyph: "\xBB" },
+    shield: { color: "#3FA7FF", glyph: "\u25C8" },
+    teleport: { color: "#C04FFF", glyph: "\u2726" }
+  };
   var camera = {
     offsetX: 0,
     offsetY: 0,
@@ -387,7 +392,7 @@
     canvas.addEventListener("touchmove", onTouchMove, { passive: false });
     canvas.addEventListener("touchend", onTouchEnd, { passive: true });
   }
-  function render(circuit, players, possibleMoves, _currentPlayerId) {
+  function render(circuit, players, possibleMoves, _currentPlayerId, powerups = [], indicators = []) {
     if (!canvas || !ctx) return;
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -428,6 +433,29 @@
       ctx.lineWidth = 1.5 / camera.scale;
       ctx.strokeRect(px + 0.5, py + 0.5, cellW - 1, cellH - 1);
     }
+    for (const pu of powerups) {
+      const style = POWERUP_STYLE[pu.type];
+      const cx = pu.cell.x * cellW + cellW / 2;
+      const cy = pu.cell.y * cellH + cellH / 2;
+      const r = cellW * 0.32;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - r);
+      ctx.lineTo(cx + r, cy);
+      ctx.lineTo(cx, cy + r);
+      ctx.lineTo(cx - r, cy);
+      ctx.closePath();
+      ctx.fillStyle = style.color;
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.6)";
+      ctx.lineWidth = 1 / camera.scale;
+      ctx.stroke();
+      const glyphSize = Math.max(8, 11 / camera.scale);
+      ctx.font = `bold ${glyphSize}px sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#1a1a2e";
+      ctx.fillText(style.glyph, cx, cy + 0.5);
+    }
     for (const player of players) {
       if (player.status === "kicked") continue;
       const cx = player.position.x * cellW + cellW / 2;
@@ -452,6 +480,32 @@
       ctx.shadowBlur = 0;
     }
     ctx.restore();
+    if (indicators.length > 0) {
+      ctx.save();
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.font = "bold 13px sans-serif";
+      let bx = 10;
+      const by = 14;
+      for (const ind of indicators) {
+        const style = POWERUP_STYLE[ind.type];
+        const padX = 8;
+        const w = ctx.measureText(ind.text).width + padX * 2 + 16;
+        const h = 22;
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.fillRect(bx, by - h / 2, w, h);
+        ctx.fillStyle = style.color;
+        ctx.fillRect(bx, by - h / 2, 4, h);
+        ctx.beginPath();
+        ctx.arc(bx + padX + 6, by, 5, 0, Math.PI * 2);
+        ctx.fillStyle = style.color;
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(ind.text, bx + padX + 16, by + 0.5);
+        bx += w + 8;
+      }
+      ctx.restore();
+    }
   }
   function screenToGrid(screenX, screenY) {
     return {
@@ -20495,6 +20549,170 @@ ${suffix}`;
     refreshGameState: () => refreshGameState
   });
 
+  // src/powerups.ts
+  var POWERUPS_ENABLED = true;
+  var POWERUP_TYPES = ["boost", "shield", "teleport"];
+  var POWERUP_EFFECTS = {
+    boost: { label: "Boost", durationTurns: 3, charges: 0, jumpCells: 0 },
+    shield: { label: "Bouclier", durationTurns: 0, charges: 1, jumpCells: 0 },
+    teleport: { label: "T\xE9l\xE9port", durationTurns: 0, charges: 0, jumpCells: 4 }
+  };
+  function emptyState() {
+    return { boostTurnsLeft: 0, shieldCharges: 0 };
+  }
+  function mulberry32(seed) {
+    let s = seed >>> 0;
+    return function() {
+      s = s + 1831565813 | 0;
+      let t = Math.imul(s ^ s >>> 15, 1 | s);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function placePowerUps(circuit, seed, count, enabled = POWERUPS_ENABLED) {
+    if (!enabled || count <= 0) return [];
+    const eligible = [];
+    for (let y = 0; y < circuit.height; y++) {
+      for (let x = 0; x < circuit.width; x++) {
+        if (circuit.cells[y]?.[x] === "track") {
+          eligible.push({ x, y });
+        }
+      }
+    }
+    if (eligible.length === 0) return [];
+    const rng = mulberry32(seed);
+    const pool = eligible.slice();
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const minSpacing = 2;
+    const chosen = [];
+    for (const cell of pool) {
+      if (chosen.length >= count) break;
+      const farEnough = chosen.every((c) => {
+        const dx = c.x - cell.x;
+        const dy = c.y - cell.y;
+        return Math.abs(dx) + Math.abs(dy) >= minSpacing;
+      });
+      if (farEnough) chosen.push(cell);
+    }
+    if (chosen.length < count) {
+      for (const cell of pool) {
+        if (chosen.length >= count) break;
+        if (!chosen.some((c) => c.x === cell.x && c.y === cell.y)) {
+          chosen.push(cell);
+        }
+      }
+    }
+    return chosen.map((cell, i) => ({
+      type: POWERUP_TYPES[i % POWERUP_TYPES.length],
+      cell
+    }));
+  }
+  function findPowerUpAt(powerups, cell) {
+    for (const pu of powerups) {
+      if (pu.cell.x === cell.x && pu.cell.y === cell.y) return pu;
+    }
+    return null;
+  }
+  function boostedVelocity(velocity) {
+    return {
+      x: velocity.x + Math.sign(velocity.x),
+      y: velocity.y + Math.sign(velocity.y)
+    };
+  }
+  function teleportPosition(position, centerline, jumpCells) {
+    if (centerline.length === 0) return position;
+    let closest = 0;
+    let closestDist = Infinity;
+    for (let i = 0; i < centerline.length; i++) {
+      const dx = centerline[i].x - position.x;
+      const dy = centerline[i].y - position.y;
+      const dist = dx * dx + dy * dy;
+      if (dist < closestDist) {
+        closestDist = dist;
+        closest = i;
+      }
+    }
+    const target = Math.min(centerline.length - 1, closest + jumpCells);
+    return { x: centerline[target].x, y: centerline[target].y };
+  }
+  function resolveMove(input) {
+    const { position, velocity, acceleration, cells, centerline, powerups, state } = input;
+    const base = calculateNewPosition(position, velocity, acceleration);
+    const boostActive = state.boostTurnsLeft > 0;
+    let newVelocity = boostActive ? boostedVelocity(base.newVelocity) : base.newVelocity;
+    let newPosition = {
+      x: position.x + newVelocity.x,
+      y: position.y + newVelocity.y
+    };
+    let crashed = checkCollision(position, newPosition, cells).crashed;
+    const nextState = {
+      boostTurnsLeft: Math.max(0, state.boostTurnsLeft - 1),
+      shieldCharges: state.shieldCharges
+    };
+    if (crashed && nextState.shieldCharges > 0) {
+      crashed = false;
+      nextState.shieldCharges -= 1;
+      newPosition = { x: position.x, y: position.y };
+      newVelocity = { x: 0, y: 0 };
+      return {
+        position: newPosition,
+        velocity: newVelocity,
+        crashed,
+        pickedUp: null,
+        state: nextState,
+        powerups
+      };
+    }
+    if (crashed) {
+      return {
+        position: newPosition,
+        velocity: newVelocity,
+        crashed,
+        pickedUp: null,
+        state: nextState,
+        powerups
+      };
+    }
+    const pickedUp = findPowerUpAt(powerups, newPosition);
+    let remaining = powerups;
+    if (pickedUp) {
+      remaining = powerups.filter((pu) => pu !== pickedUp);
+      const effect = POWERUP_EFFECTS[pickedUp.type];
+      switch (pickedUp.type) {
+        case "boost":
+          nextState.boostTurnsLeft = effect.durationTurns;
+          break;
+        case "shield":
+          nextState.shieldCharges += effect.charges;
+          break;
+        case "teleport":
+          newPosition = teleportPosition(newPosition, centerline, effect.jumpCells);
+          break;
+      }
+    }
+    return {
+      position: newPosition,
+      velocity: newVelocity,
+      crashed,
+      pickedUp,
+      state: nextState,
+      powerups: remaining
+    };
+  }
+  function activeEffectIndicators(state) {
+    const out = [];
+    if (state.boostTurnsLeft > 0) {
+      out.push({ type: "boost", text: `${POWERUP_EFFECTS.boost.label} ${state.boostTurnsLeft}` });
+    }
+    if (state.shieldCharges > 0) {
+      out.push({ type: "shield", text: `${POWERUP_EFFECTS.shield.label} ${state.shieldCharges}` });
+    }
+    return out;
+  }
+
   // src/progression.ts
   var XP_BY_PLACE = [100, 60, 35, 20];
   var COINS_BY_PLACE = [50, 30, 20, 10];
@@ -20562,6 +20780,28 @@ ${suffix}`;
   var currentPlayerId = null;
   var currentMoves = null;
   var unsubscribe = null;
+  var localPowerUps = [];
+  var localEffectState = emptyState();
+  var powerupsGameId = null;
+  var POWERUP_COUNT = 6;
+  function hashSeed(s) {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+  function ensurePowerUps(game) {
+    if (!POWERUPS_ENABLED) {
+      localPowerUps = [];
+      return;
+    }
+    if (powerupsGameId === game.id) return;
+    powerupsGameId = game.id;
+    localEffectState = emptyState();
+    localPowerUps = placePowerUps(game.circuit, hashSeed(game.code || game.id), POWERUP_COUNT);
+  }
   function initGameScreen() {
     const canvas2 = document.getElementById("game-canvas");
     if (!canvas2) {
@@ -20595,16 +20835,34 @@ ${suffix}`;
     if (!currentGame || !currentPlayerId) return;
     const myPlayer = currentGame.players.find((p) => p.id === currentPlayerId);
     if (!myPlayer) return;
-    const result = calculateNewPosition(myPlayer.position, myPlayer.velocity, move.acceleration);
-    const collision = checkCollision(myPlayer.position, result.newPosition, currentGame.circuit.cells);
+    const base = calculateNewPosition(myPlayer.position, myPlayer.velocity, move.acceleration);
+    let newPosition = base.newPosition;
+    let newVelocity = base.newVelocity;
+    let crashed = checkCollision(myPlayer.position, newPosition, currentGame.circuit.cells).crashed;
+    if (POWERUPS_ENABLED) {
+      const r = resolveMove({
+        position: myPlayer.position,
+        velocity: myPlayer.velocity,
+        acceleration: move.acceleration,
+        cells: currentGame.circuit.cells,
+        centerline: currentGame.circuit.centerline,
+        powerups: localPowerUps,
+        state: localEffectState
+      });
+      newPosition = r.position;
+      newVelocity = r.velocity;
+      crashed = r.crashed;
+      localPowerUps = r.powerups;
+      localEffectState = r.state;
+    }
     try {
       await submitMove(
         currentGame.id,
         currentPlayerId,
         move.acceleration,
-        result.newPosition,
-        result.newVelocity,
-        collision.crashed,
+        newPosition,
+        newVelocity,
+        crashed,
         currentGame.current_turn
       );
     } catch (err) {
@@ -20625,6 +20883,7 @@ ${suffix}`;
       handleGameEnd();
       return;
     }
+    ensurePowerUps(currentGame);
     const currentPlayer = currentGame.players[currentGame.current_player_index];
     const isMyTurn = !!currentPlayerId && !!currentPlayer && currentPlayer.id === currentPlayerId;
     if (isMyTurn && currentPlayer) {
@@ -20641,7 +20900,9 @@ ${suffix}`;
       currentGame.circuit,
       currentGame.players,
       currentMoves,
-      currentPlayerId ?? ""
+      currentPlayerId ?? "",
+      localPowerUps,
+      activeEffectIndicators(localEffectState)
     );
   }
   function updateHUD(playerName, turn, isMyTurn) {
