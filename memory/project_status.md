@@ -25,9 +25,17 @@ type: project
 - **Supabase migration** : appliquer `supabase/migrations/001_init.sql` dans le dashboard Supabase
 - **Test multiplayer** : première vraie partie multi une fois Supabase configuré
 
+## V2 — Livré
+
+- **Mode solo contre IA (21 juin 2026)** — jouable hors-ligne, sans Supabase.
+  `src/ai.ts` (heuristique seedable : progression centerline + sécurité
+  anti-mur, réutilise le moteur partagé), `src/solo.ts` (boucle pure joueur
+  + 1-3 IA, tours alternés, crash/respawn, classement, rewards via
+  `progression.ts`), UI (`app.ts`/`game.ts` : menu Solo + sélection
+  adversaires). Tests hermétiques `tests/unit/ai.test.ts` & `solo.test.ts`.
+
 ## V2 Backlog (défini dans le design spec)
 
-- Mode solo contre IA
 - Éditeur de circuits
 - Daily quests
 - Saisons / classement global

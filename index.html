@@ -14,7 +14,8 @@
     <section id="screen-home" class="screen active" aria-label="Home">
       <h1>🏎️ RaceTrack</h1>
       <div id="home-profile"></div>
-      <button id="btn-create" class="btn btn-primary">Créer une course</button>
+      <button id="btn-solo-ai" class="btn btn-primary">Jouer en solo</button>
+      <button id="btn-create" class="btn btn-secondary">Créer une course</button>
       <button id="btn-join" class="btn btn-secondary">Rejoindre</button>
       <div class="home-nav">
         <button id="btn-quests" class="btn btn-small">Défis</button>
@@ -29,6 +30,8 @@
       <p class="quests-subtitle">3 nouveaux défis chaque jour — réclame tes pièces&nbsp;!</p>
       <div id="quests-container" style="width:100%;max-width:400px;"></div>
       <button id="btn-quests-back" class="btn btn-secondary">Retour</button>
+    </section>
+
     <section id="screen-circuits" class="screen" aria-label="Mes circuits">
       <h2>Mes circuits</h2>
       <button id="btn-new-circuit" class="btn btn-primary">+ Nouveau circuit</button>
@@ -61,6 +64,18 @@
         <button id="btn-solo-restart" class="btn btn-small">↺ Recommencer</button>
         <button id="btn-solo-back" class="btn btn-small">Retour</button>
       </div>
+    </section>
+
+    <section id="screen-solo-ai" class="screen" aria-label="Solo">
+      <h2>Course solo</h2>
+      <p class="solo-ai-subtitle">Combien d'adversaires IA&nbsp;?</p>
+      <div id="solo-ai-opponents" class="solo-ai-options">
+        <button class="btn btn-opt" data-count="1">1 IA</button>
+        <button class="btn btn-opt" data-count="2">2 IA</button>
+        <button class="btn btn-opt" data-count="3">3 IA</button>
+      </div>
+      <button id="btn-solo-ai-start" class="btn btn-primary">Lancer la course</button>
+      <button id="btn-solo-ai-back" class="btn btn-secondary">Retour</button>
     </section>
 
     <section id="screen-lobby" class="screen" aria-label="Lobby">

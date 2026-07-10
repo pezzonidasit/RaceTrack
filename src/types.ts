@@ -77,7 +77,8 @@ export type ScreenId =
   | 'quests'
   | 'circuits'
   | 'editor'
-  | 'solo';
+  | 'solo'
+  | 'solo-ai';
 
 export const RANKS = [
   { name: 'Karting', xp: 0 },
