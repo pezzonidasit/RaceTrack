@@ -67,7 +67,7 @@ export interface Profile {
   owned_themes: string[];
 }
 
-export type ScreenId = 'home' | 'lobby' | 'game' | 'result' | 'shop' | 'profile';
+export type ScreenId = 'home' | 'lobby' | 'game' | 'result' | 'shop' | 'profile' | 'quests';
 
 export const RANKS = [
   { name: 'Karting', xp: 0 },

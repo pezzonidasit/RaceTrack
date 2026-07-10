@@ -557,7 +557,7 @@
     updateProfile: () => updateProfile
   });
 
-  // node_modules/tslib/tslib.es6.mjs
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/tslib/tslib.es6.mjs
   function __rest(s, e) {
     var t = {};
     for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
@@ -597,7 +597,7 @@
     });
   }
 
-  // node_modules/@supabase/functions-js/dist/module/helper.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/functions-js/dist/module/helper.js
   var resolveFetch = (customFetch) => {
     if (customFetch) {
       return (...args) => customFetch(...args);
@@ -605,7 +605,7 @@
     return (...args) => fetch(...args);
   };
 
-  // node_modules/@supabase/functions-js/dist/module/types.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/functions-js/dist/module/types.js
   var FunctionsError = class extends Error {
     constructor(message, name = "FunctionsError", context) {
       super(message);
@@ -647,7 +647,7 @@
     FunctionRegion2["UsWest2"] = "us-west-2";
   })(FunctionRegion || (FunctionRegion = {}));
 
-  // node_modules/@supabase/functions-js/dist/module/FunctionsClient.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/functions-js/dist/module/FunctionsClient.js
   var FunctionsClient = class {
     /**
      * Creates a new Functions client bound to an Edge Functions URL.
@@ -916,7 +916,7 @@
     }
   };
 
-  // node_modules/@supabase/postgrest-js/dist/index.mjs
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/postgrest-js/dist/index.mjs
   var PostgrestError = class extends Error {
     /**
     * @example
@@ -5635,7 +5635,7 @@ ${cause.stack}`;
     }
   };
 
-  // node_modules/@supabase/realtime-js/dist/module/lib/websocket-factory.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/realtime-js/dist/module/lib/websocket-factory.js
   var WebSocketFactory = class {
     /**
      * Static-only utility – prevent instantiation.
@@ -5748,10 +5748,10 @@ Suggested solution: ${env.workaround}`;
   };
   var websocket_factory_default = WebSocketFactory;
 
-  // node_modules/@supabase/realtime-js/dist/module/lib/version.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/realtime-js/dist/module/lib/version.js
   var version = "2.100.1";
 
-  // node_modules/@supabase/realtime-js/dist/module/lib/constants.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/realtime-js/dist/module/lib/constants.js
   var DEFAULT_VERSION = `realtime-js/${version}`;
   var VSN_1_0_0 = "1.0.0";
   var VSN_2_0_0 = "2.0.0";
@@ -5780,7 +5780,7 @@ Suggested solution: ${env.workaround}`;
     closed: "closed"
   };
 
-  // node_modules/@supabase/realtime-js/dist/module/lib/serializer.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/realtime-js/dist/module/lib/serializer.js
   var Serializer = class {
     constructor(allowedMetadataKeys) {
       this.HEADER_LENGTH = 1;
@@ -5920,7 +5920,7 @@ Suggested solution: ${env.workaround}`;
     }
   };
 
-  // node_modules/@supabase/realtime-js/dist/module/lib/transformers.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/realtime-js/dist/module/lib/transformers.js
   var PostgresTypes;
   (function(PostgresTypes2) {
     PostgresTypes2["abstime"] = "abstime";
@@ -6083,7 +6083,7 @@ Suggested solution: ${env.workaround}`;
     return wsUrl.href;
   };
 
-  // node_modules/@supabase/phoenix/priv/static/phoenix.mjs
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/phoenix/priv/static/phoenix.mjs
   var closure = (value) => {
     if (typeof value === "function") {
       return (
@@ -7852,7 +7852,7 @@ Suggested solution: ${env.workaround}`;
     }
   };
 
-  // node_modules/@supabase/realtime-js/dist/module/phoenix/presenceAdapter.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/realtime-js/dist/module/phoenix/presenceAdapter.js
   var PresenceAdapter = class _PresenceAdapter {
     constructor(channel, opts) {
       const phoenixOptions = phoenixPresenceOptions(opts);
@@ -7942,7 +7942,7 @@ Suggested solution: ${env.workaround}`;
     return (currentPresences === null || currentPresences === void 0 ? void 0 : currentPresences.metas) ? transformState(currentPresences) : [];
   }
 
-  // node_modules/@supabase/realtime-js/dist/module/RealtimePresence.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/realtime-js/dist/module/RealtimePresence.js
   var REALTIME_PRESENCE_LISTEN_EVENTS;
   (function(REALTIME_PRESENCE_LISTEN_EVENTS2) {
     REALTIME_PRESENCE_LISTEN_EVENTS2["SYNC"] = "sync";
@@ -7976,7 +7976,7 @@ Suggested solution: ${env.workaround}`;
     }
   };
 
-  // node_modules/@supabase/realtime-js/dist/module/phoenix/channelAdapter.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/realtime-js/dist/module/phoenix/channelAdapter.js
   var ChannelAdapter = class {
     constructor(socket, topic, params) {
       const phoenixParams = phoenixChannelParams(params);
@@ -8075,7 +8075,7 @@ Suggested solution: ${env.workaround}`;
     };
   }
 
-  // node_modules/@supabase/realtime-js/dist/module/RealtimeChannel.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/realtime-js/dist/module/RealtimeChannel.js
   var REALTIME_POSTGRES_CHANGES_LISTEN_EVENT;
   (function(REALTIME_POSTGRES_CHANGES_LISTEN_EVENT2) {
     REALTIME_POSTGRES_CHANGES_LISTEN_EVENT2["ALL"] = "*";
@@ -8725,7 +8725,7 @@ Suggested solution: ${env.workaround}`;
     }
   };
 
-  // node_modules/@supabase/realtime-js/dist/module/phoenix/socketAdapter.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/realtime-js/dist/module/phoenix/socketAdapter.js
   var SocketAdapter = class {
     constructor(endPoint, options) {
       this.socket = new Socket(endPoint, options);
@@ -8834,7 +8834,7 @@ Suggested solution: ${env.workaround}`;
     }
   };
 
-  // node_modules/@supabase/realtime-js/dist/module/RealtimeClient.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/realtime-js/dist/module/RealtimeClient.js
   var CONNECTION_TIMEOUTS = {
     HEARTBEAT_INTERVAL: 25e3,
     RECONNECT_DELAY: 10,
@@ -9413,7 +9413,7 @@ Option 2: Install and provide the "ws" package:
     }
   };
 
-  // node_modules/iceberg-js/dist/index.mjs
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/iceberg-js/dist/index.mjs
   var IcebergError = class extends Error {
     constructor(message, opts) {
       super(message);
@@ -9946,7 +9946,7 @@ Option 2: Install and provide the "ws" package:
     }
   };
 
-  // node_modules/@supabase/storage-js/dist/index.mjs
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/storage-js/dist/index.mjs
   var StorageError = class extends Error {
     constructor(message, namespace = "storage", status, statusCode) {
       super(message);
@@ -12482,10 +12482,10 @@ Option 2: Install and provide the "ws" package:
     }
   };
 
-  // node_modules/@supabase/auth-js/dist/module/lib/version.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/auth-js/dist/module/lib/version.js
   var version3 = "2.100.1";
 
-  // node_modules/@supabase/auth-js/dist/module/lib/constants.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/auth-js/dist/module/lib/constants.js
   var AUTO_REFRESH_TICK_DURATION_MS = 30 * 1e3;
   var AUTO_REFRESH_TICK_THRESHOLD = 3;
   var EXPIRY_MARGIN_MS = AUTO_REFRESH_TICK_THRESHOLD * AUTO_REFRESH_TICK_DURATION_MS;
@@ -12502,7 +12502,7 @@ Option 2: Install and provide the "ws" package:
   var BASE64URL_REGEX = /^([a-z0-9_-]{4})*($|[a-z0-9_-]{3}$|[a-z0-9_-]{2}$)$/i;
   var JWKS_TTL = 10 * 60 * 1e3;
 
-  // node_modules/@supabase/auth-js/dist/module/lib/errors.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/auth-js/dist/module/lib/errors.js
   var AuthError = class extends Error {
     constructor(message, status, code) {
       super(message);
@@ -12616,7 +12616,7 @@ Option 2: Install and provide the "ws" package:
     }
   };
 
-  // node_modules/@supabase/auth-js/dist/module/lib/base64url.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/auth-js/dist/module/lib/base64url.js
   var TO_BASE64URL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_".split("");
   var IGNORE_BASE64URL = " 	\n\r=".split("");
   var FROM_BASE64URL = (() => {
@@ -12778,7 +12778,7 @@ Option 2: Install and provide the "ws" package:
     return result.join("");
   }
 
-  // node_modules/@supabase/auth-js/dist/module/lib/helpers.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/auth-js/dist/module/lib/helpers.js
   function expiresAt(expiresIn) {
     const timeNow = Math.round(Date.now() / 1e3);
     return timeNow + expiresIn;
@@ -12954,13 +12954,13 @@ Option 2: Install and provide the "ws" package:
     const hashed = await sha256(verifier);
     return btoa(hashed).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   }
-  async function getCodeChallengeAndMethod(storage, storageKey, isPasswordRecovery = false) {
+  async function getCodeChallengeAndMethod(storage, storageKey2, isPasswordRecovery = false) {
     const codeVerifier = generatePKCEVerifier();
     let storedCodeVerifier = codeVerifier;
     if (isPasswordRecovery) {
       storedCodeVerifier += "/PASSWORD_RECOVERY";
     }
-    await setItemAsync(storage, `${storageKey}-code-verifier`, storedCodeVerifier);
+    await setItemAsync(storage, `${storageKey2}-code-verifier`, storedCodeVerifier);
     const codeChallenge = await generatePKCEChallenge(codeVerifier);
     const codeChallengeMethod = codeVerifier === codeChallenge ? "plain" : "s256";
     return [codeChallenge, codeChallengeMethod];
@@ -13060,7 +13060,7 @@ Option 2: Install and provide the "ws" package:
     return JSON.parse(JSON.stringify(obj));
   }
 
-  // node_modules/@supabase/auth-js/dist/module/lib/fetch.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/auth-js/dist/module/lib/fetch.js
   var _getErrorMessage2 = (err) => err.msg || err.message || err.error_description || err.error || JSON.stringify(err);
   var NETWORK_ERROR_CODES = [502, 503, 504];
   async function handleError2(error) {
@@ -13197,10 +13197,10 @@ Option 2: Install and provide the "ws" package:
     return data.access_token && data.refresh_token && data.expires_in;
   }
 
-  // node_modules/@supabase/auth-js/dist/module/lib/types.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/auth-js/dist/module/lib/types.js
   var SIGN_OUT_SCOPES = ["global", "local", "others"];
 
-  // node_modules/@supabase/auth-js/dist/module/GoTrueAdminApi.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/auth-js/dist/module/GoTrueAdminApi.js
   var GoTrueAdminApi = class {
     /**
      * Creates an admin API client that can be used to manage users and OAuth clients.
@@ -14216,7 +14216,7 @@ Option 2: Install and provide the "ws" package:
     }
   };
 
-  // node_modules/@supabase/auth-js/dist/module/lib/local-storage.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/auth-js/dist/module/lib/local-storage.js
   function memoryLocalStorageAdapter(store = {}) {
     return {
       getItem: (key) => {
@@ -14231,7 +14231,7 @@ Option 2: Install and provide the "ws" package:
     };
   }
 
-  // node_modules/@supabase/auth-js/dist/module/lib/locks.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/auth-js/dist/module/lib/locks.js
   var internals = {
     /**
      * @experimental
@@ -14343,7 +14343,7 @@ Option 2: Install and provide the "ws" package:
     }
   }
 
-  // node_modules/@supabase/auth-js/dist/module/lib/polyfills.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/auth-js/dist/module/lib/polyfills.js
   function polyfillGlobalThis() {
     if (typeof globalThis === "object")
       return;
@@ -14363,7 +14363,7 @@ Option 2: Install and provide the "ws" package:
     }
   }
 
-  // node_modules/@supabase/auth-js/dist/module/lib/web3/ethereum.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/auth-js/dist/module/lib/web3/ethereum.js
   function getAddress(address) {
     if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
       throw new Error(`@supabase/auth-js: Address "${address}" is invalid.`);
@@ -14431,7 +14431,7 @@ Request ID: ${requestId}`;
 ${suffix}`;
   }
 
-  // node_modules/@supabase/auth-js/dist/module/lib/webauthn.errors.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/auth-js/dist/module/lib/webauthn.errors.js
   var WebAuthnError = class extends Error {
     constructor({ message, code, cause, name }) {
       var _a;
@@ -14599,7 +14599,7 @@ ${suffix}`;
     });
   }
 
-  // node_modules/@supabase/auth-js/dist/module/lib/webauthn.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/auth-js/dist/module/lib/webauthn.js
   var WebAuthnAbortService = class {
     /**
      * Create an abort signal for a new WebAuthn operation.
@@ -15122,7 +15122,7 @@ ${suffix}`;
     }
   };
 
-  // node_modules/@supabase/auth-js/dist/module/GoTrueClient.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/auth-js/dist/module/GoTrueClient.js
   polyfillGlobalThis();
   var DEFAULT_OPTIONS = {
     url: GOTRUE_URL,
@@ -19663,11 +19663,11 @@ ${suffix}`;
   GoTrueClient.nextInstanceID = {};
   var GoTrueClient_default = GoTrueClient;
 
-  // node_modules/@supabase/auth-js/dist/module/AuthClient.js
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/auth-js/dist/module/AuthClient.js
   var AuthClient = GoTrueClient_default;
   var AuthClient_default = AuthClient;
 
-  // node_modules/@supabase/supabase-js/dist/index.mjs
+  // ../../../../../../home/vincent/projects/claude-workspace/RaceTrack/node_modules/@supabase/supabase-js/dist/index.mjs
   var version4 = "2.100.1";
   var JS_ENV = "";
   if (typeof Deno !== "undefined") JS_ENV = "deno";
@@ -20144,7 +20144,7 @@ ${suffix}`;
       const { data } = await _this.auth.getSession();
       return (_data$session$access_ = (_data$session = data.session) === null || _data$session === void 0 ? void 0 : _data$session.access_token) !== null && _data$session$access_ !== void 0 ? _data$session$access_ : _this.supabaseKey;
     }
-    _initSupabaseAuthClient({ autoRefreshToken, persistSession, detectSessionInUrl, storage, userStorage, storageKey, flowType, lock, debug, throwOnError }, headers, fetch$1) {
+    _initSupabaseAuthClient({ autoRefreshToken, persistSession, detectSessionInUrl, storage, userStorage, storageKey: storageKey2, flowType, lock, debug, throwOnError }, headers, fetch$1) {
       const authHeaders = {
         Authorization: `Bearer ${this.supabaseKey}`,
         apikey: `${this.supabaseKey}`
@@ -20152,7 +20152,7 @@ ${suffix}`;
       return new SupabaseAuthClient({
         url: this.authUrl.href,
         headers: _objectSpread23(_objectSpread23({}, authHeaders), headers),
-        storageKey,
+        storageKey: storageKey2,
         autoRefreshToken,
         persistSession,
         detectSessionInUrl,
@@ -20759,6 +20759,13 @@ ${suffix}`;
     });
     incrementDailyGameCount();
   }
+  async function creditRewards(reward) {
+    const profile = await getOrCreateProfile();
+    const newXp = profile.xp + reward.xp;
+    const newCoins = profile.coins + reward.coins;
+    const newRank = getRankForXp(newXp);
+    await updateProfile({ xp: newXp, coins: newCoins, rank: newRank });
+  }
   function getDailyGameCount() {
     const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
     const storedDate = localStorage.getItem(LS_DAILY_DATE);
@@ -20773,6 +20780,209 @@ ${suffix}`;
   function incrementDailyGameCount() {
     const count = getDailyGameCount();
     localStorage.setItem(LS_DAILY_COUNT, String(count + 1));
+  }
+
+  // src/quests.ts
+  var QUEST_POOL = [
+    { type: "race_count", label: "Termine {target} courses", target: 3, reward: { coins: 30, xp: 40 } },
+    { type: "race_count", label: "Termine {target} courses", target: 5, reward: { coins: 50, xp: 60 } },
+    { type: "win_count", label: "Gagne {target} course", target: 1, reward: { coins: 50, xp: 70 } },
+    { type: "win_count", label: "Gagne {target} courses", target: 2, reward: { coins: 80, xp: 110 } },
+    { type: "no_crash_race", label: "Termine {target} course sans crash", target: 1, reward: { coins: 40, xp: 50 } },
+    { type: "distance", label: "Parcours {target} m", target: 500, reward: { coins: 30, xp: 40 } },
+    { type: "distance", label: "Parcours {target} m", target: 800, reward: { coins: 45, xp: 55 } },
+    { type: "unlock_item", label: "D\xE9bloque {target} nouveau skin", target: 1, reward: { coins: 20, xp: 30 } }
+  ];
+  var QUESTS_PER_DAY = 3;
+  var LS_PREFIX = "rt_quests_";
+  function localDateKey(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  function dateSeed(date) {
+    const key = localDateKey(date);
+    let h = 2166136261;
+    for (let i = 0; i < key.length; i++) {
+      h ^= key.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+  function mulberry322(seed) {
+    let a = seed >>> 0;
+    return function() {
+      a |= 0;
+      a = a + 1831565813 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function questLabel(q) {
+    const tpl = QUEST_POOL.find((t) => t.type === q.type && t.target === q.target);
+    const label = tpl?.label ?? "{target}";
+    return label.replace("{target}", String(q.target));
+  }
+  function generateDailyQuests(date) {
+    const rng = mulberry322(dateSeed(date));
+    const dayKey = localDateKey(date);
+    const pool = QUEST_POOL.slice();
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const chosen = [];
+    const seenTypes = /* @__PURE__ */ new Set();
+    for (const tpl of pool) {
+      if (seenTypes.has(tpl.type)) continue;
+      seenTypes.add(tpl.type);
+      chosen.push(tpl);
+      if (chosen.length === QUESTS_PER_DAY) break;
+    }
+    return chosen.map((tpl, idx) => ({
+      id: `${dayKey}-${idx}-${tpl.type}`,
+      type: tpl.type,
+      target: tpl.target,
+      progress: 0,
+      reward: { ...tpl.reward },
+      claimed: false
+    }));
+  }
+  function incrementFor(quest, event) {
+    switch (quest.type) {
+      case "race_count":
+        return event.kind === "race_finished" ? 1 : 0;
+      case "win_count":
+        return event.kind === "race_finished" && event.won ? 1 : 0;
+      case "no_crash_race":
+        return event.kind === "race_finished" && !event.crashed ? 1 : 0;
+      case "distance":
+        return event.kind === "race_finished" ? Math.max(0, event.distance) : 0;
+      case "unlock_item":
+        return event.kind === "item_unlocked" ? 1 : 0;
+    }
+  }
+  function applyProgress(quests, event) {
+    return quests.map((q) => {
+      if (q.claimed) return q;
+      const inc = incrementFor(q, event);
+      if (inc <= 0) return q;
+      return { ...q, progress: Math.min(q.target, q.progress + inc) };
+    });
+  }
+  function isComplete(q) {
+    return q.progress >= q.target;
+  }
+  function claimReward(quests, questId) {
+    const target = quests.find((q) => q.id === questId);
+    if (!target || target.claimed || !isComplete(target)) {
+      return { quests, reward: null };
+    }
+    const updated = quests.map((q) => q.id === questId ? { ...q, claimed: true } : q);
+    return { quests: updated, reward: { ...target.reward } };
+  }
+  function storageKey(profileId) {
+    return `${LS_PREFIX}${profileId}`;
+  }
+  function loadQuests(profileId, now = /* @__PURE__ */ new Date()) {
+    const today = localDateKey(now);
+    const raw = localStorage.getItem(storageKey(profileId));
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed.date === today && Array.isArray(parsed.quests)) {
+          return parsed.quests;
+        }
+      } catch {
+      }
+    }
+    const fresh = generateDailyQuests(now);
+    saveQuests(profileId, fresh, now);
+    return fresh;
+  }
+  function saveQuests(profileId, quests, now = /* @__PURE__ */ new Date()) {
+    const payload = { date: localDateKey(now), quests };
+    localStorage.setItem(storageKey(profileId), JSON.stringify(payload));
+  }
+  function recordEvent(profileId, event, now = /* @__PURE__ */ new Date()) {
+    const quests = applyProgress(loadQuests(profileId, now), event);
+    saveQuests(profileId, quests, now);
+    return quests;
+  }
+  function claim(profileId, questId, now = /* @__PURE__ */ new Date()) {
+    const { quests, reward } = claimReward(loadQuests(profileId, now), questId);
+    if (reward) saveQuests(profileId, quests, now);
+    return reward;
+  }
+
+  // src/quests-ui.ts
+  var LOCAL_FALLBACK_ID = "local";
+  function getProfileId() {
+    try {
+      return getUserId();
+    } catch {
+      return LOCAL_FALLBACK_ID;
+    }
+  }
+  function notifyRaceFinished(opts) {
+    const event = {
+      kind: "race_finished",
+      won: opts.won,
+      crashed: opts.crashed,
+      distance: opts.distance
+    };
+    recordEvent(getProfileId(), event);
+    renderQuests();
+  }
+  function notifyItemUnlocked() {
+    recordEvent(getProfileId(), { kind: "item_unlocked" });
+    renderQuests();
+  }
+  async function handleClaim(questId) {
+    const reward = claim(getProfileId(), questId);
+    if (!reward) return;
+    try {
+      await creditRewards(reward);
+    } catch (err) {
+      console.warn("creditRewards (d\xE9fis) a \xE9chou\xE9 \u2014 profil non synchronis\xE9:", err);
+    }
+    renderQuests();
+  }
+  function questCardHtml(q) {
+    const pct = Math.min(100, Math.round(q.progress / q.target * 100));
+    const complete = isComplete(q);
+    let btn;
+    if (q.claimed) {
+      btn = `<button class="btn btn-small quest-claim" disabled>R\xE9clam\xE9 \u2713</button>`;
+    } else if (complete) {
+      btn = `<button class="btn btn-small btn-primary quest-claim" data-quest-id="${q.id}">R\xE9clamer</button>`;
+    } else {
+      btn = `<button class="btn btn-small quest-claim" disabled>${q.progress}/${q.target}</button>`;
+    }
+    return `
+    <div class="quest-card${q.claimed ? " claimed" : ""}${complete && !q.claimed ? " ready" : ""}">
+      <div class="quest-info">
+        <div class="quest-label">${questLabel(q)}</div>
+        <div class="quest-reward">\u{1FA99} ${q.reward.coins} \xB7 ${q.reward.xp} XP</div>
+      </div>
+      <div class="quest-bar"><div class="quest-bar-fill" style="width:${pct}%"></div></div>
+      ${btn}
+    </div>
+  `;
+  }
+  function renderQuests() {
+    const container = document.getElementById("quests-container");
+    if (!container) return;
+    const quests = loadQuests(getProfileId());
+    container.innerHTML = quests.map(questCardHtml).join("");
+    container.querySelectorAll(".quest-claim:not([disabled])").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.questId;
+        if (id) handleClaim(id).catch(console.error);
+      });
+    });
   }
 
   // src/game.ts
@@ -20802,6 +21012,9 @@ ${suffix}`;
     localEffectState = emptyState();
     localPowerUps = placePowerUps(game.circuit, hashSeed(game.code || game.id), POWERUP_COUNT);
   }
+  var raceDistanceCells = 0;
+  var raceCrashed = false;
+  var METERS_PER_CELL = 10;
   function initGameScreen() {
     const canvas2 = document.getElementById("game-canvas");
     if (!canvas2) {
@@ -20855,6 +21068,10 @@ ${suffix}`;
       localPowerUps = r.powerups;
       localEffectState = r.state;
     }
+    const dx = newPosition.x - myPlayer.position.x;
+    const dy = newPosition.y - myPlayer.position.y;
+    raceDistanceCells += Math.hypot(dx, dy);
+    if (crashed) raceCrashed = true;
     try {
       await submitMove(
         currentGame.id,
@@ -20930,6 +21147,11 @@ ${suffix}`;
     const rewards = calculateRewards(finishPosition, noCrash, totalTurns);
     updateProfileAfterGame(rewards, won).catch((err) => {
       console.error("updateProfileAfterGame failed:", err);
+    });
+    notifyRaceFinished({
+      won,
+      crashed: raceCrashed,
+      distance: Math.round(raceDistanceCells * METERS_PER_CELL)
     });
     showResultScreen(game.players, rewards);
   }
@@ -21026,6 +21248,8 @@ ${suffix}`;
         return;
       }
       if (currentGame.status === "playing") {
+        raceDistanceCells = 0;
+        raceCrashed = false;
         showScreen("game");
         initGameScreen();
         await refreshGameState();
@@ -21105,6 +21329,7 @@ ${suffix}`;
       updates.owned_themes = [...profile.owned_themes, item.id];
     }
     await updateProfile(updates);
+    notifyItemUnlocked();
     await renderShop();
   }
   async function renderShop() {
@@ -21158,7 +21383,7 @@ ${suffix}`;
   }
 
   // src/app.ts
-  var screens = ["home", "lobby", "game", "result", "shop", "profile"];
+  var screens = ["home", "lobby", "game", "result", "shop", "profile", "quests"];
   function showScreen(id) {
     screens.forEach((s) => {
       const el = document.getElementById(`screen-${s}`);
@@ -21194,6 +21419,13 @@ ${suffix}`;
       renderShop().catch(console.error);
     });
     document.getElementById("btn-shop-back")?.addEventListener("click", () => {
+      showScreen("home");
+    });
+    document.getElementById("btn-quests")?.addEventListener("click", () => {
+      showScreen("quests");
+      renderQuests();
+    });
+    document.getElementById("btn-quests-back")?.addEventListener("click", () => {
       showScreen("home");
     });
     document.getElementById("btn-profile")?.addEventListener("click", () => {
