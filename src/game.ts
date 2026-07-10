@@ -13,6 +13,7 @@ import {
   activeEffectIndicators,
 } from './powerups';
 import { calculateRewards, updateProfileAfterGame } from './progression';
+import { notifyRaceFinished } from './quests-ui';
 import { showScreen } from './app';
 
 // ---------------------------------------------------------------------------
@@ -54,6 +55,10 @@ function ensurePowerUps(game: Game): void {
   localEffectState = emptyState();
   localPowerUps = placePowerUps(game.circuit, hashSeed(game.code || game.id), POWERUP_COUNT);
 }
+// Suivi local de la course en cours pour les défis quotidiens (distance, crash)
+let raceDistanceCells = 0;       // distance euclidienne cumulée (cellules)
+let raceCrashed = false;         // le pilote local a-t-il crashé au moins une fois
+const METERS_PER_CELL = 10;      // 1 cellule ≈ 10 m (échelle ludique)
 
 // ---------------------------------------------------------------------------
 // Game screen
@@ -131,6 +136,12 @@ async function executeMove(move: MoveOption): Promise<void> {
     localPowerUps = r.powerups;
     localEffectState = r.state;
   }
+
+  // Suivi défis quotidiens : distance parcourue ce tour + crash éventuel
+  const dx = newPosition.x - myPlayer.position.x;
+  const dy = newPosition.y - myPlayer.position.y;
+  raceDistanceCells += Math.hypot(dx, dy);
+  if (crashed) raceCrashed = true;
 
   try {
     await multiplayer.submitMove(
@@ -229,6 +240,13 @@ function handleGameEnd(): void {
   // Persist to Supabase (fire-and-forget — don't block the result screen)
   updateProfileAfterGame(rewards, won).catch(err => {
     console.error('updateProfileAfterGame failed:', err);
+  });
+
+  // Avancement des défis quotidiens (solo, offline) — fin de course
+  notifyRaceFinished({
+    won,
+    crashed: raceCrashed,
+    distance: Math.round(raceDistanceCells * METERS_PER_CELL),
   });
 
   showResultScreen(game.players, rewards);
@@ -353,7 +371,9 @@ function showLobby(gameId: string, code: string, isCreator: boolean): void {
     }
 
     if (currentGame.status === 'playing') {
-      // Transition to game screen
+      // Transition to game screen — reset des compteurs de défis pour la course
+      raceDistanceCells = 0;
+      raceCrashed = false;
       showScreen('game');
       initGameScreen();
       await refreshGameState();

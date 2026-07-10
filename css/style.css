@@ -140,3 +140,49 @@ h2 { font-size: 1.6rem; }
 .rarity-common { color: var(--text-muted); }
 .rarity-rare { color: var(--blue); }
 .rarity-epic { color: var(--accent); }
+
+/* ---- Défis quotidiens ---- */
+.quests-subtitle {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+  margin: 0 0 12px;
+}
+.quest-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid transparent;
+}
+.quest-card.ready { border-color: var(--yellow); }
+.quest-card.claimed { opacity: 0.55; }
+.quest-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.quest-label { font-weight: 600; }
+.quest-reward {
+  color: var(--yellow);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.quest-bar {
+  height: 8px;
+  background: var(--bg-surface);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.quest-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+.quest-card.ready .quest-bar-fill { background: var(--yellow); }
+.quest-claim { align-self: flex-end; }
+.quest-claim:disabled { opacity: 0.5; cursor: default; }

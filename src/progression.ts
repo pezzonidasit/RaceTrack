@@ -103,6 +103,24 @@ export async function updateProfileAfterGame(rewards: Rewards, won: boolean): Pr
 }
 
 // ---------------------------------------------------------------------------
+// creditRewards — crédite des coins/XP au profil (hors partie)
+// ---------------------------------------------------------------------------
+
+/**
+ * Ajoute coins + XP au profil et recalcule le rang. Utilisé par les défis
+ * quotidiens à la réclamation (ne touche pas games_played/games_won).
+ */
+export async function creditRewards(reward: { xp: number; coins: number }): Promise<void> {
+  const profile: Profile = await getOrCreateProfile();
+
+  const newXp = profile.xp + reward.xp;
+  const newCoins = profile.coins + reward.coins;
+  const newRank = getRankForXp(newXp);
+
+  await updateProfile({ xp: newXp, coins: newCoins, rank: newRank });
+}
+
+// ---------------------------------------------------------------------------
 // Private helpers — daily game count (localStorage)
 // ---------------------------------------------------------------------------
 

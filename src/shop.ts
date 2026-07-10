@@ -1,4 +1,5 @@
 import { getOrCreateProfile, updateProfile } from './profiles';
+import { notifyItemUnlocked } from './quests-ui';
 import type { Profile } from './types';
 
 // ---------------------------------------------------------------------------
@@ -82,6 +83,10 @@ async function buyItem(itemId: string): Promise<void> {
   }
 
   await updateProfile(updates);
+
+  // Avancement des défis quotidiens — un nouvel objet débloqué
+  notifyItemUnlocked();
+
   await renderShop();
 }
 

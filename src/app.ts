@@ -6,12 +6,13 @@ import * as multiplayer from './multiplayer';
 import * as profiles from './profiles';
 import * as game from './game';
 import { renderShop } from './shop';
+import { renderQuests } from './quests-ui';
 
 // ---------------------------------------------------------------------------
 // Screen routing
 // ---------------------------------------------------------------------------
 
-const screens: ScreenId[] = ['home', 'lobby', 'game', 'result', 'shop', 'profile'];
+const screens: ScreenId[] = ['home', 'lobby', 'game', 'result', 'shop', 'profile', 'quests'];
 
 export function showScreen(id: ScreenId): void {
   screens.forEach(s => {
@@ -64,6 +65,15 @@ async function init(): Promise<void> {
   });
 
   document.getElementById('btn-shop-back')?.addEventListener('click', () => {
+    showScreen('home');
+  });
+
+  document.getElementById('btn-quests')?.addEventListener('click', () => {
+    showScreen('quests');
+    renderQuests();
+  });
+
+  document.getElementById('btn-quests-back')?.addEventListener('click', () => {
     showScreen('home');
   });
 
