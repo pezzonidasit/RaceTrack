@@ -7,12 +7,16 @@ import * as profiles from './profiles';
 import * as game from './game';
 import { renderShop } from './shop';
 import { renderQuests } from './quests-ui';
+import * as editorUi from './editor-ui';
 
 // ---------------------------------------------------------------------------
 // Screen routing
 // ---------------------------------------------------------------------------
 
-const screens: ScreenId[] = ['home', 'lobby', 'game', 'result', 'shop', 'profile', 'quests'];
+const screens: ScreenId[] = [
+  'home', 'lobby', 'game', 'result', 'shop', 'profile',
+  'quests', 'circuits', 'editor', 'solo',
+];
 
 export function showScreen(id: ScreenId): void {
   screens.forEach(s => {
@@ -89,6 +93,11 @@ async function init(): Promise<void> {
     showScreen('home');
   });
 
+  // Éditeur de circuits perso (mode local, sans réseau)
+  editorUi.initMyCircuitsScreen();
+  editorUi.initEditorScreen();
+  editorUi.initSoloScreen();
+
   showScreen('home');
   console.log('RaceTrack v1 initialized');
 
@@ -120,4 +129,4 @@ document.addEventListener('DOMContentLoaded', () => {
 // Window exposure for debugging / console access
 // ---------------------------------------------------------------------------
 
-(window as any).RaceTrack = { physics, circuit, grid, multiplayer, profiles, game, showScreen };
+(window as any).RaceTrack = { physics, circuit, grid, multiplayer, profiles, game, editorUi, showScreen };

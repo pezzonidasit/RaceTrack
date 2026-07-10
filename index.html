@@ -18,6 +18,7 @@
       <button id="btn-join" class="btn btn-secondary">Rejoindre</button>
       <div class="home-nav">
         <button id="btn-quests" class="btn btn-small">Défis</button>
+        <button id="btn-circuits" class="btn btn-small">Mes circuits</button>
         <button id="btn-shop" class="btn btn-small">Shop</button>
         <button id="btn-profile" class="btn btn-small">Profil</button>
       </div>
@@ -28,6 +29,38 @@
       <p class="quests-subtitle">3 nouveaux défis chaque jour — réclame tes pièces&nbsp;!</p>
       <div id="quests-container" style="width:100%;max-width:400px;"></div>
       <button id="btn-quests-back" class="btn btn-secondary">Retour</button>
+    <section id="screen-circuits" class="screen" aria-label="Mes circuits">
+      <h2>Mes circuits</h2>
+      <button id="btn-new-circuit" class="btn btn-primary">+ Nouveau circuit</button>
+      <div id="circuits-list" class="circuits-list"></div>
+      <button id="btn-circuits-back" class="btn btn-secondary">Retour</button>
+    </section>
+
+    <section id="screen-editor" class="screen" aria-label="Éditeur">
+      <input id="editor-name" class="editor-name" type="text" maxlength="24" placeholder="Nom du circuit">
+      <canvas id="editor-canvas"></canvas>
+      <div id="editor-tools" role="toolbar" aria-label="Outils de dessin">
+        <button class="tool-btn active" data-tool="track">🛣️ Piste</button>
+        <button class="tool-btn" data-tool="start">🏁 Départ</button>
+        <button class="tool-btn" data-tool="finish">🎯 Arrivée</button>
+        <button class="tool-btn" data-tool="wall">🧽 Gomme</button>
+      </div>
+      <div id="editor-msg" class="editor-msg" role="status"></div>
+      <div id="editor-actions">
+        <button id="btn-editor-test" class="btn btn-small">▶︎ Tester</button>
+        <button id="btn-editor-save" class="btn btn-small">💾 Sauver</button>
+        <button id="btn-editor-clear" class="btn btn-small">Effacer</button>
+        <button id="btn-editor-back" class="btn btn-small">Retour</button>
+      </div>
+    </section>
+
+    <section id="screen-solo" class="screen" aria-label="Course solo">
+      <div id="solo-hud"><span id="solo-status"></span></div>
+      <canvas id="solo-canvas"></canvas>
+      <div id="solo-actions">
+        <button id="btn-solo-restart" class="btn btn-small">↺ Recommencer</button>
+        <button id="btn-solo-back" class="btn btn-small">Retour</button>
+      </div>
     </section>
 
     <section id="screen-lobby" class="screen" aria-label="Lobby">
