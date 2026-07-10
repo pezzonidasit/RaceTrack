@@ -21382,8 +21382,531 @@ ${suffix}`;
     });
   }
 
+  // src/editor-ui.ts
+  var editor_ui_exports = {};
+  __export(editor_ui_exports, {
+    initEditorScreen: () => initEditorScreen,
+    initMyCircuitsScreen: () => initMyCircuitsScreen,
+    initSoloScreen: () => initSoloScreen
+  });
+
+  // src/editor.ts
+  var EDITOR_WIDTH = 40;
+  var EDITOR_HEIGHT = 30;
+  var MAX_SAVED_CIRCUITS = 20;
+  var STORAGE_KEY2 = "rt_circuits";
+  var CELL_TYPES = /* @__PURE__ */ new Set(["track", "wall", "start", "finish"]);
+  function createEmptyCircuit(width, height) {
+    const cells = Array.from(
+      { length: height },
+      () => Array(width).fill("wall")
+    );
+    return {
+      width,
+      height,
+      cells,
+      startPositions: [],
+      finishLine: [],
+      centerline: []
+    };
+  }
+  function applyTool(circuit, pos, tool) {
+    const { x, y } = pos;
+    if (x < 0 || y < 0 || x >= circuit.width || y >= circuit.height) {
+      return circuit;
+    }
+    const cells = circuit.cells.map((row) => row.slice());
+    cells[y][x] = tool;
+    const sameAs = (p) => p.x === x && p.y === y;
+    const startPositions = circuit.startPositions.filter((p) => !sameAs(p));
+    const finishLine = circuit.finishLine.filter((p) => !sameAs(p));
+    if (tool === "start") {
+      startPositions.push({ x, y });
+    } else if (tool === "finish") {
+      finishLine.push({ x, y });
+    }
+    return { ...circuit, cells, startPositions, finishLine };
+  }
+  function validateForSave(circuit) {
+    if (circuit.startPositions.length === 0) {
+      return { ok: false, error: "Place une case de d\xE9part." };
+    }
+    if (circuit.finishLine.length === 0) {
+      return { ok: false, error: "Place une ligne d'arriv\xE9e." };
+    }
+    if (!validateCircuit(circuit)) {
+      return {
+        ok: false,
+        error: "Circuit infranchissable : aucun chemin du d\xE9part jusqu'\xE0 l'arriv\xE9e."
+      };
+    }
+    return { ok: true };
+  }
+  function assertCircuitShape(value) {
+    if (typeof value !== "object" || value === null) {
+      throw new Error("Format de circuit invalide.");
+    }
+    const c = value;
+    if (typeof c.width !== "number" || typeof c.height !== "number") {
+      throw new Error("Format de circuit invalide : dimensions manquantes.");
+    }
+    if (!Array.isArray(c.cells) || c.cells.length !== c.height) {
+      throw new Error("Format de circuit invalide : grille incoh\xE9rente.");
+    }
+    for (const row of c.cells) {
+      if (!Array.isArray(row) || row.length !== c.width) {
+        throw new Error("Format de circuit invalide : ligne de grille incoh\xE9rente.");
+      }
+      for (const cell of row) {
+        if (!CELL_TYPES.has(cell)) {
+          throw new Error("Format de circuit invalide : type de cellule inconnu.");
+        }
+      }
+    }
+    assertVecArray(c.startPositions, "startPositions");
+    assertVecArray(c.finishLine, "finishLine");
+    assertVecArray(c.centerline, "centerline");
+    return {
+      width: c.width,
+      height: c.height,
+      cells: c.cells,
+      startPositions: c.startPositions,
+      finishLine: c.finishLine,
+      centerline: c.centerline
+    };
+  }
+  function assertVecArray(value, field) {
+    if (!Array.isArray(value)) {
+      throw new Error(`Format de circuit invalide : ${field} manquant.`);
+    }
+    for (const v of value) {
+      if (typeof v !== "object" || v === null || typeof v.x !== "number" || typeof v.y !== "number") {
+        throw new Error(`Format de circuit invalide : ${field} mal form\xE9.`);
+      }
+    }
+  }
+  function defaultStorage() {
+    return localStorage;
+  }
+  function listSavedCircuits(storage = defaultStorage()) {
+    const raw = storage.getItem(STORAGE_KEY2);
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map((entry) => {
+        try {
+          return {
+            id: String(entry.id),
+            name: String(entry.name),
+            circuit: assertCircuitShape(entry.circuit)
+          };
+        } catch {
+          return null;
+        }
+      }).filter((e) => e !== null);
+    } catch {
+      return [];
+    }
+  }
+  function saveCircuit(name, circuit, storage = defaultStorage()) {
+    const validation = validateForSave(circuit);
+    if (!validation.ok) {
+      throw new Error(validation.error ?? "Circuit invalide.");
+    }
+    const existing = listSavedCircuits(storage);
+    if (existing.length >= MAX_SAVED_CIRCUITS) {
+      throw new Error(
+        `Limite de ${MAX_SAVED_CIRCUITS} circuits atteinte. Supprime-en un d'abord.`
+      );
+    }
+    const saved = {
+      id: generateId(),
+      name: name.trim() || "Sans nom",
+      circuit
+    };
+    storage.setItem(STORAGE_KEY2, JSON.stringify([...existing, saved]));
+    return saved;
+  }
+  function deleteSavedCircuit(id, storage = defaultStorage()) {
+    const remaining = listSavedCircuits(storage).filter((c) => c.id !== id);
+    storage.setItem(STORAGE_KEY2, JSON.stringify(remaining));
+  }
+  var idCounter = 0;
+  function generateId() {
+    idCounter += 1;
+    return `c_${Date.now().toString(36)}_${idCounter}`;
+  }
+
+  // src/solo.ts
+  function createSoloState(circuit) {
+    const start = circuit.startPositions[0] ?? { x: 0, y: 0 };
+    return {
+      circuit,
+      position: { x: start.x, y: start.y },
+      velocity: { x: 0, y: 0 },
+      status: "racing",
+      turns: 0,
+      crashes: 0
+    };
+  }
+  function stepSolo(state, acceleration) {
+    if (state.status === "finished") {
+      return state;
+    }
+    const { newPosition, newVelocity } = calculateNewPosition(
+      state.position,
+      state.velocity,
+      acceleration
+    );
+    const { crashed } = checkCollision(state.position, newPosition, state.circuit.cells);
+    const turns = state.turns + 1;
+    if (crashed) {
+      const respawn = nearestStart(state.circuit, state.position);
+      return {
+        ...state,
+        position: { x: respawn.x, y: respawn.y },
+        velocity: { x: 0, y: 0 },
+        turns,
+        crashes: state.crashes + 1
+      };
+    }
+    const onFinish = state.circuit.finishLine.some(
+      (p) => p.x === newPosition.x && p.y === newPosition.y
+    );
+    return {
+      ...state,
+      position: newPosition,
+      velocity: newVelocity,
+      turns,
+      status: onFinish ? "finished" : "racing"
+    };
+  }
+  function nearestStart(circuit, from) {
+    const starts = circuit.startPositions;
+    if (starts.length === 0) return from;
+    let best = starts[0];
+    let bestDist = Infinity;
+    for (const s of starts) {
+      const dx = s.x - from.x;
+      const dy = s.y - from.y;
+      const d = dx * dx + dy * dy;
+      if (d < bestDist) {
+        bestDist = d;
+        best = s;
+      }
+    }
+    return best;
+  }
+
+  // src/editor-ui.ts
+  var COLOR_MAP2 = {
+    wall: "#1a1a2e",
+    track: "#2a2a4a",
+    start: "#3a5a3a",
+    finish: "#5a3a3a"
+  };
+  var editorCircuit = createEmptyCircuit(EDITOR_WIDTH, EDITOR_HEIGHT);
+  var currentTool = "track";
+  var painting = false;
+  var soloState = null;
+  function fitCanvas(canvas2, circuit) {
+    const rect = canvas2.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const cell = Math.max(
+      1,
+      Math.floor(Math.min(rect.width / circuit.width, rect.height / circuit.height))
+    );
+    canvas2.width = circuit.width * cell * dpr;
+    canvas2.height = circuit.height * cell * dpr;
+    canvas2.style.width = `${circuit.width * cell}px`;
+    canvas2.style.height = `${circuit.height * cell}px`;
+    const ctx2 = canvas2.getContext("2d");
+    if (ctx2) ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return cell;
+  }
+  function drawCircuit(canvas2, circuit, cell, opts = {}) {
+    const ctx2 = canvas2.getContext("2d");
+    if (!ctx2) return;
+    for (let y = 0; y < circuit.height; y++) {
+      for (let x = 0; x < circuit.width; x++) {
+        ctx2.fillStyle = COLOR_MAP2[circuit.cells[y]?.[x] ?? "wall"];
+        ctx2.fillRect(x * cell, y * cell, cell, cell);
+      }
+    }
+    ctx2.strokeStyle = "rgba(255,255,255,0.06)";
+    ctx2.lineWidth = 0.5;
+    for (let x = 0; x <= circuit.width; x++) {
+      ctx2.beginPath();
+      ctx2.moveTo(x * cell, 0);
+      ctx2.lineTo(x * cell, circuit.height * cell);
+      ctx2.stroke();
+    }
+    for (let y = 0; y <= circuit.height; y++) {
+      ctx2.beginPath();
+      ctx2.moveTo(0, y * cell);
+      ctx2.lineTo(circuit.width * cell, y * cell);
+      ctx2.stroke();
+    }
+    if (opts.moves) {
+      for (const m of opts.moves) {
+        ctx2.fillStyle = "rgba(255,60,60,0.35)";
+        ctx2.fillRect(m.x * cell, m.y * cell, cell, cell);
+        ctx2.strokeStyle = "rgba(255,60,60,0.9)";
+        ctx2.lineWidth = 1.5;
+        ctx2.strokeRect(m.x * cell + 0.5, m.y * cell + 0.5, cell - 1, cell - 1);
+      }
+    }
+    if (opts.player) {
+      const cx = opts.player.x * cell + cell / 2;
+      const cy = opts.player.y * cell + cell / 2;
+      ctx2.beginPath();
+      ctx2.arc(cx, cy, Math.max(2, cell * 0.38), 0, Math.PI * 2);
+      ctx2.fillStyle = "#FF4444";
+      ctx2.fill();
+      ctx2.strokeStyle = "#fff";
+      ctx2.lineWidth = 1.5;
+      ctx2.stroke();
+    }
+  }
+  function eventToCell(canvas2, cell, clientX, clientY) {
+    const rect = canvas2.getBoundingClientRect();
+    return {
+      x: Math.floor((clientX - rect.left) / cell),
+      y: Math.floor((clientY - rect.top) / cell)
+    };
+  }
+  function initMyCircuitsScreen() {
+    document.getElementById("btn-circuits")?.addEventListener("click", () => {
+      renderMyCircuits();
+      showScreen("circuits");
+    });
+    document.getElementById("btn-circuits-back")?.addEventListener("click", () => {
+      showScreen("home");
+    });
+    document.getElementById("btn-new-circuit")?.addEventListener("click", () => {
+      openEditor();
+    });
+  }
+  function renderMyCircuits() {
+    const list = document.getElementById("circuits-list");
+    if (!list) return;
+    const saved = listSavedCircuits();
+    if (saved.length === 0) {
+      list.innerHTML = '<div class="circuits-empty">Aucun circuit. Cr\xE9e le premier !</div>';
+      return;
+    }
+    list.innerHTML = saved.map(
+      (s) => `
+      <div class="circuit-row" data-id="${s.id}">
+        <span class="circuit-name">${escapeHtml(s.name)}</span>
+        <span class="circuit-row-actions">
+          <button class="btn btn-small circuit-play" data-id="${s.id}">\u25B6\uFE0E</button>
+          <button class="btn btn-small circuit-edit" data-id="${s.id}">\u270E</button>
+          <button class="btn btn-small circuit-del" data-id="${s.id}">\u{1F5D1}\uFE0F</button>
+        </span>
+      </div>`
+    ).join("");
+    list.querySelectorAll(".circuit-play").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const c = findCircuit(btn.dataset.id);
+        if (c) startSolo(c);
+      });
+    });
+    list.querySelectorAll(".circuit-edit").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const c = findCircuit(btn.dataset.id);
+        if (c) openEditor(c);
+      });
+    });
+    list.querySelectorAll(".circuit-del").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (btn.dataset.id && confirm("Supprimer ce circuit ?")) {
+          deleteSavedCircuit(btn.dataset.id);
+          renderMyCircuits();
+        }
+      });
+    });
+  }
+  function findCircuit(id) {
+    if (!id) return null;
+    return listSavedCircuits().find((s) => s.id === id)?.circuit ?? null;
+  }
+  function initEditorScreen() {
+    const canvas2 = document.getElementById("editor-canvas");
+    if (!canvas2) return;
+    document.querySelectorAll("#editor-tools .tool-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        currentTool = btn.dataset.tool ?? "track";
+        document.querySelectorAll("#editor-tools .tool-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+      });
+    });
+    const paintAt = (clientX, clientY) => {
+      const cell = lastEditorCell || 1;
+      const pos = eventToCell(canvas2, cell, clientX, clientY);
+      const next = applyTool(editorCircuit, pos, currentTool);
+      if (next !== editorCircuit) {
+        editorCircuit = next;
+        drawEditor();
+      }
+    };
+    canvas2.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      painting = true;
+      paintAt(e.clientX, e.clientY);
+    });
+    canvas2.addEventListener("pointermove", (e) => {
+      if (!painting) return;
+      e.preventDefault();
+      paintAt(e.clientX, e.clientY);
+    });
+    const stop = () => {
+      painting = false;
+    };
+    canvas2.addEventListener("pointerup", stop);
+    canvas2.addEventListener("pointercancel", stop);
+    canvas2.addEventListener("pointerleave", stop);
+    document.getElementById("btn-editor-clear")?.addEventListener("click", () => {
+      editorCircuit = createEmptyCircuit(EDITOR_WIDTH, EDITOR_HEIGHT);
+      setEditorMsg("");
+      drawEditor();
+    });
+    document.getElementById("btn-editor-test")?.addEventListener("click", () => {
+      const res = validateForSave(editorCircuit);
+      if (!res.ok) {
+        setEditorMsg(res.error ?? "Circuit invalide.", true);
+        return;
+      }
+      startSolo(editorCircuit);
+    });
+    document.getElementById("btn-editor-save")?.addEventListener("click", () => {
+      const nameInput = document.getElementById("editor-name");
+      const name = nameInput?.value.trim() || "";
+      if (!name) {
+        setEditorMsg("Donne un nom au circuit.", true);
+        return;
+      }
+      try {
+        saveCircuit(name, editorCircuit);
+        setEditorMsg("Circuit sauvegard\xE9 \u2713");
+        renderMyCircuits();
+        showScreen("circuits");
+      } catch (err) {
+        setEditorMsg(err.message, true);
+      }
+    });
+    document.getElementById("btn-editor-back")?.addEventListener("click", () => {
+      showScreen("circuits");
+    });
+    window.addEventListener("resize", () => {
+      if (document.getElementById("screen-editor")?.classList.contains("active")) {
+        drawEditor();
+      }
+    });
+  }
+  var lastEditorCell = 0;
+  function openEditor(circuit) {
+    editorCircuit = circuit ? cloneCircuit(circuit) : createEmptyCircuit(EDITOR_WIDTH, EDITOR_HEIGHT);
+    const nameInput = document.getElementById("editor-name");
+    if (nameInput) nameInput.value = "";
+    setEditorMsg("");
+    showScreen("editor");
+    requestAnimationFrame(() => drawEditor());
+  }
+  function drawEditor() {
+    const canvas2 = document.getElementById("editor-canvas");
+    if (!canvas2) return;
+    lastEditorCell = fitCanvas(canvas2, editorCircuit);
+    drawCircuit(canvas2, editorCircuit, lastEditorCell);
+  }
+  function setEditorMsg(msg, isError = false) {
+    const el = document.getElementById("editor-msg");
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.toggle("error", isError);
+  }
+  var lastSoloCell = 0;
+  var soloCircuit = null;
+  function initSoloScreen() {
+    const canvas2 = document.getElementById("solo-canvas");
+    if (!canvas2) return;
+    canvas2.addEventListener("click", (e) => {
+      if (!soloState || soloState.status === "finished") return;
+      const cell = lastSoloCell || 1;
+      const tapped = eventToCell(canvas2, cell, e.clientX, e.clientY);
+      const moves = currentSoloMoves();
+      const chosen = moves.find((m) => m.target.x === tapped.x && m.target.y === tapped.y);
+      if (!chosen) return;
+      soloState = stepSolo(soloState, chosen.acceleration);
+      drawSolo();
+    });
+    document.getElementById("btn-solo-restart")?.addEventListener("click", () => {
+      if (soloCircuit) soloState = createSoloState(soloCircuit);
+      drawSolo();
+    });
+    document.getElementById("btn-solo-back")?.addEventListener("click", () => {
+      showScreen("circuits");
+    });
+    window.addEventListener("resize", () => {
+      if (document.getElementById("screen-solo")?.classList.contains("active")) {
+        drawSolo();
+      }
+    });
+  }
+  function startSolo(circuit) {
+    soloCircuit = cloneCircuit(circuit);
+    soloState = createSoloState(soloCircuit);
+    showScreen("solo");
+    requestAnimationFrame(() => drawSolo());
+  }
+  function currentSoloMoves() {
+    if (!soloState) return [];
+    return getPossibleMoves(soloState.position, soloState.velocity).filter(
+      (m) => m.target.x >= 0 && m.target.y >= 0 && m.target.x < soloState.circuit.width && m.target.y < soloState.circuit.height
+    );
+  }
+  function drawSolo() {
+    const canvas2 = document.getElementById("solo-canvas");
+    if (!canvas2 || !soloState) return;
+    lastSoloCell = fitCanvas(canvas2, soloState.circuit);
+    const moves = soloState.status === "finished" ? [] : currentSoloMoves().map((m) => m.target);
+    drawCircuit(canvas2, soloState.circuit, lastSoloCell, {
+      player: soloState.position,
+      moves
+    });
+    const status = document.getElementById("solo-status");
+    if (status) {
+      status.textContent = soloState.status === "finished" ? `\u{1F3C1} Arriv\xE9e ! ${soloState.turns} tours, ${soloState.crashes} crashs` : `Tour ${soloState.turns} \xB7 Crashs ${soloState.crashes} \u2014 touche une case rouge`;
+    }
+  }
+  function cloneCircuit(c) {
+    return {
+      width: c.width,
+      height: c.height,
+      cells: c.cells.map((row) => row.slice()),
+      startPositions: c.startPositions.map((p) => ({ ...p })),
+      finishLine: c.finishLine.map((p) => ({ ...p })),
+      centerline: c.centerline.map((p) => ({ ...p }))
+    };
+  }
+  function escapeHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
   // src/app.ts
-  var screens = ["home", "lobby", "game", "result", "shop", "profile", "quests"];
+  var screens = [
+    "home",
+    "lobby",
+    "game",
+    "result",
+    "shop",
+    "profile",
+    "quests",
+    "circuits",
+    "editor",
+    "solo"
+  ];
   function showScreen(id) {
     screens.forEach((s) => {
       const el = document.getElementById(`screen-${s}`);
@@ -21437,6 +21960,9 @@ ${suffix}`;
     document.getElementById("btn-leave")?.addEventListener("click", () => {
       showScreen("home");
     });
+    initMyCircuitsScreen();
+    initEditorScreen();
+    initSoloScreen();
     showScreen("home");
     console.log("RaceTrack v1 initialized");
     try {
@@ -21455,5 +21981,5 @@ ${suffix}`;
   document.addEventListener("DOMContentLoaded", () => {
     init().catch(console.error);
   });
-  window.RaceTrack = { physics: physics_exports, circuit: circuit_exports, grid: grid_exports, multiplayer: multiplayer_exports, profiles: profiles_exports, game: game_exports, showScreen };
+  window.RaceTrack = { physics: physics_exports, circuit: circuit_exports, grid: grid_exports, multiplayer: multiplayer_exports, profiles: profiles_exports, game: game_exports, editorUi: editor_ui_exports, showScreen };
 })();
