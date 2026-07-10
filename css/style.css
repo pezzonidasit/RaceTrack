@@ -68,6 +68,27 @@ h2 { font-size: 1.6rem; }
   border-radius: var(--radius);
 }
 
+.solo-ai-subtitle {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+.solo-ai-options {
+  display: flex;
+  gap: 12px;
+}
+.btn-opt {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 2px solid var(--bg-surface);
+  min-width: 64px;
+}
+.btn-opt:hover { border-color: var(--accent); }
+.btn-opt.selected {
+  background: var(--bg-surface);
+  border-color: var(--accent);
+  color: white;
+}
+
 .code-display {
   font-size: 2rem;
   font-weight: 700;

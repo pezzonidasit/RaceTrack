@@ -15,7 +15,7 @@ import * as editorUi from './editor-ui';
 
 const screens: ScreenId[] = [
   'home', 'lobby', 'game', 'result', 'shop', 'profile',
-  'quests', 'circuits', 'editor', 'solo',
+  'quests', 'circuits', 'editor', 'solo', 'solo-ai',
 ];
 
 export function showScreen(id: ScreenId): void {
@@ -51,6 +51,31 @@ function updateHomeProfile(profile: Profile): void {
 
 async function init(): Promise<void> {
   // Wire button handlers first (before async work so UI is responsive immediately)
+
+  // --- Solo (contre IA) ---
+  let soloOpponentCount = 1;
+  const soloOptionBtns = Array.from(
+    document.querySelectorAll<HTMLElement>('#solo-ai-opponents .btn-opt'),
+  );
+  const selectSoloOption = (btn: HTMLElement): void => {
+    soloOpponentCount = parseInt(btn.dataset.count ?? '1', 10) || 1;
+    soloOptionBtns.forEach(b => b.classList.toggle('selected', b === btn));
+  };
+  soloOptionBtns.forEach(btn => btn.addEventListener('click', () => selectSoloOption(btn)));
+  // Sélection par défaut : 1 IA
+  const defaultSoloBtn = soloOptionBtns.find(b => b.dataset.count === '1');
+  if (defaultSoloBtn) selectSoloOption(defaultSoloBtn);
+
+  document.getElementById('btn-solo-ai')?.addEventListener('click', () => {
+    showScreen('solo-ai');
+  });
+  document.getElementById('btn-solo-ai-back')?.addEventListener('click', () => {
+    showScreen('home');
+  });
+  document.getElementById('btn-solo-ai-start')?.addEventListener('click', () => {
+    game.startSolo(soloOpponentCount);
+  });
+
   document.getElementById('btn-create')?.addEventListener('click', () => {
     game.handleCreateGame().catch(console.error);
   });

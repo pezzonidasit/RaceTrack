@@ -20546,7 +20546,8 @@ ${suffix}`;
     handleCreateGame: () => handleCreateGame,
     handleJoinGame: () => handleJoinGame,
     initGameScreen: () => initGameScreen,
-    refreshGameState: () => refreshGameState
+    refreshGameState: () => refreshGameState,
+    startSolo: () => startSolo
   });
 
   // src/powerups.ts
@@ -20711,6 +20712,213 @@ ${suffix}`;
       out.push({ type: "shield", text: `${POWERUP_EFFECTS.shield.label} ${state.shieldCharges}` });
     }
     return out;
+  }
+
+  // src/ai.ts
+  function createRng(seed) {
+    let a = seed >>> 0;
+    return function rng() {
+      a |= 0;
+      a = a + 1831565813 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function signedArc(from, to, n) {
+    if (n <= 0) return 0;
+    let d = ((to - from) % n + n) % n;
+    if (d > n / 2) d -= n;
+    return d;
+  }
+  function nearestCenterlineIndex(pos, centerline) {
+    let best = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < centerline.length; i++) {
+      const dx = centerline[i].x - pos.x;
+      const dy = centerline[i].y - pos.y;
+      const dist = dx * dx + dy * dy;
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = i;
+      }
+    }
+    return best;
+  }
+  var PROGRESS_WEIGHT = 10;
+  var DEAD_END_PENALTY = 1e3;
+  function chooseMove(state, circuit, rng) {
+    const { cells, centerline } = circuit;
+    const options = getPossibleMoves(state.position, state.velocity);
+    const curIndex = nearestCenterlineIndex(state.position, centerline);
+    const n = centerline.length;
+    const legal = options.filter(
+      (o) => !checkCollision(state.position, o.target, cells).crashed
+    );
+    if (legal.length === 0) {
+      return options.reduce(
+        (best2, o) => speedSquared(o.newVelocity) < speedSquared(best2.newVelocity) ? o : best2
+      );
+    }
+    let best = null;
+    let bestScore = -Infinity;
+    for (const o of legal) {
+      const score = scoreMove(o, curIndex, n, cells, centerline);
+      const tieBreak = rng ? rng() : 0;
+      if (score > bestScore || score === bestScore && best !== null && tieBreak > 0.5) {
+        bestScore = score;
+        best = o;
+      }
+    }
+    return best ?? legal[0];
+  }
+  function scoreMove(o, curIndex, n, cells, centerline) {
+    const nextIndex = nearestCenterlineIndex(o.target, centerline);
+    const progress = signedArc(curIndex, nextIndex, n);
+    const safeContinuations = getPossibleMoves(o.target, o.newVelocity).filter(
+      (next) => !checkCollision(o.target, next.target, cells).crashed
+    ).length;
+    let score = progress * PROGRESS_WEIGHT;
+    if (safeContinuations === 0) {
+      score -= DEAD_END_PENALTY;
+    } else {
+      score += safeContinuations;
+    }
+    return score;
+  }
+  function speedSquared(v) {
+    return v.x * v.x + v.y * v.y;
+  }
+
+  // src/solo-ai.ts
+  var DEFAULT_AI_NAMES = ["Rapido", "Bolide", "Turbo"];
+  function createSoloRace(opts) {
+    const { circuit } = opts;
+    const opponentCount = clamp(opts.opponentCount, 1, 3);
+    const seed = opts.seed ?? 1;
+    const rng = createRng(seed);
+    const centerline = circuit.centerline;
+    const n = centerline.length;
+    const finishIndex = circuit.finishLine.length > 0 ? nearestCenterlineIndex(circuit.finishLine[0], centerline) : 0;
+    const racers = [];
+    const total = opponentCount + 1;
+    const aiNames = opts.aiNames ?? DEFAULT_AI_NAMES;
+    for (let i = 0; i < total; i++) {
+      const isAi = i > 0;
+      const start = pickStart(circuit, i);
+      const startIndex = n > 0 ? nearestCenterlineIndex(start, centerline) : 0;
+      let targetProgress = n > 0 ? ((finishIndex - startIndex) % n + n) % n : 0;
+      if (targetProgress === 0 && n > 0) targetProgress = n;
+      racers.push({
+        id: isAi ? `ai-${i}` : "human",
+        name: isAi ? aiNames[i - 1] ?? `IA ${i}` : opts.playerName ?? "Vous",
+        color: PLAYER_COLORS[i % PLAYER_COLORS.length],
+        isAi,
+        position: { ...start },
+        velocity: { x: 0, y: 0 },
+        status: "racing",
+        finishPosition: null,
+        lapProgress: 0,
+        lastIndex: startIndex,
+        targetProgress,
+        everCrashed: false,
+        finishTurn: null
+      });
+    }
+    return {
+      circuit,
+      racers,
+      currentIndex: 0,
+      turn: 0,
+      status: "playing",
+      rng,
+      nextRank: 1,
+      maxTurns: opts.maxTurns ?? Math.max(60, n * 4)
+    };
+  }
+  function currentRacer(race) {
+    return race.racers[race.currentIndex];
+  }
+  function isHumanTurn(race) {
+    const r = currentRacer(race);
+    return !!r && !r.isAi && r.status === "racing";
+  }
+  function aiChooseMove(race, racer) {
+    return chooseMove(
+      { position: racer.position, velocity: racer.velocity },
+      race.circuit,
+      race.rng
+    );
+  }
+  function applyMove(race, racerId, move) {
+    if (race.status !== "playing") return;
+    const racer = race.racers.find((r) => r.id === racerId);
+    if (!racer || racer.status !== "racing") return;
+    const { cells, centerline } = race.circuit;
+    const n = centerline.length;
+    const result = calculateNewPosition(racer.position, racer.velocity, move.acceleration);
+    const collision = checkCollision(racer.position, result.newPosition, cells);
+    if (collision.crashed) {
+      racer.everCrashed = true;
+      const respawn = getRespawnPosition(result.newPosition, centerline);
+      racer.position = { ...respawn };
+      racer.velocity = { x: 0, y: 0 };
+    } else {
+      racer.position = result.newPosition;
+      racer.velocity = result.newVelocity;
+    }
+    if (n > 0) {
+      const newIndex = nearestCenterlineIndex(racer.position, centerline);
+      racer.lapProgress += signedArc(racer.lastIndex, newIndex, n);
+      racer.lastIndex = newIndex;
+    }
+    if (!collision.crashed && racer.lapProgress >= racer.targetProgress) {
+      racer.status = "finished";
+      racer.finishPosition = race.nextRank++;
+      racer.finishTurn = race.turn;
+    }
+    advanceTurn2(race, racer);
+  }
+  function advanceTurn2(race, justMoved) {
+    if (justMoved.status === "finished" && !justMoved.isAi) {
+      race.status = "finished";
+      return;
+    }
+    const racingLeft = race.racers.some((r) => r.status === "racing");
+    if (!racingLeft) {
+      race.status = "finished";
+      return;
+    }
+    let idx = race.currentIndex;
+    for (let i = 0; i < race.racers.length; i++) {
+      idx = (idx + 1) % race.racers.length;
+      if (idx === 0) race.turn += 1;
+      if (race.racers[idx].status === "racing") {
+        race.currentIndex = idx;
+        break;
+      }
+    }
+    if (race.turn >= race.maxTurns) {
+      race.status = "finished";
+    }
+  }
+  function getFinalRanking(race) {
+    const finished = race.racers.filter((r) => r.finishPosition !== null).sort((a, b) => (a.finishPosition ?? 0) - (b.finishPosition ?? 0));
+    const unfinished = race.racers.filter((r) => r.finishPosition === null).sort((a, b) => b.lapProgress - a.lapProgress);
+    return [...finished, ...unfinished];
+  }
+  function getHumanPlace(race) {
+    const ranking = getFinalRanking(race);
+    const idx = ranking.findIndex((r) => !r.isAi);
+    return idx === -1 ? ranking.length : idx + 1;
+  }
+  function pickStart(circuit, i) {
+    const starts = circuit.startPositions;
+    if (starts.length === 0) return { x: 0, y: 0 };
+    return { ...starts[i] ?? starts[starts.length - 1] };
+  }
+  function clamp(v, lo, hi) {
+    return Math.max(lo, Math.min(hi, v));
   }
 
   // src/progression.ts
@@ -21272,6 +21480,121 @@ ${suffix}`;
     </div>
   `).join("");
   }
+  var SOLO_WIDTH = 40;
+  var SOLO_HEIGHT = 28;
+  var SOLO_AI_DELAY = 350;
+  var soloRace = null;
+  var soloMoves = null;
+  var soloCanvasBound = false;
+  function startSolo(opponentCount) {
+    if (unsubscribe) {
+      unsubscribe();
+      unsubscribe = null;
+    }
+    currentGame = null;
+    currentPlayerId = null;
+    currentMoves = null;
+    const circuit = generateCircuit(SOLO_WIDTH, SOLO_HEIGHT);
+    const seed = (Date.now() & 2147483647) >>> 0;
+    const playerName = getLocalName() || "Vous";
+    soloRace = createSoloRace({ circuit, opponentCount, seed, playerName });
+    showScreen("game");
+    initSoloGameScreen();
+    promptHumanTurn();
+  }
+  function initSoloGameScreen() {
+    const canvas2 = document.getElementById("game-canvas");
+    if (!canvas2) {
+      console.error("initSoloGameScreen: #game-canvas not found");
+      return;
+    }
+    initGrid(canvas2);
+    if (!soloCanvasBound) {
+      canvas2.addEventListener("click", handleSoloTap);
+      soloCanvasBound = true;
+    }
+  }
+  function handleSoloTap(e) {
+    if (!soloRace || !soloMoves) return;
+    if (!isHumanTurn(soloRace)) return;
+    const canvas2 = e.currentTarget;
+    const rect = canvas2.getBoundingClientRect();
+    const g = screenToGrid(e.clientX - rect.left, e.clientY - rect.top);
+    const move = soloMoves.find((m) => m.target.x === g.x && m.target.y === g.y);
+    if (!move) return;
+    applyMove(soloRace, "human", move);
+    soloMoves = null;
+    renderSolo();
+    if (soloRace.status === "finished") {
+      handleSoloEnd();
+      return;
+    }
+    window.setTimeout(stepSoloAi, SOLO_AI_DELAY);
+  }
+  function stepSoloAi() {
+    if (!soloRace) return;
+    if (soloRace.status === "finished") {
+      handleSoloEnd();
+      return;
+    }
+    if (isHumanTurn(soloRace)) {
+      promptHumanTurn();
+      return;
+    }
+    const racer = currentRacer(soloRace);
+    const move = aiChooseMove(soloRace, racer);
+    applyMove(soloRace, racer.id, move);
+    updateHUD(racer.name, `Tour ${soloRace.turn + 1}`, false);
+    renderSolo();
+    window.setTimeout(stepSoloAi, SOLO_AI_DELAY);
+  }
+  function promptHumanTurn() {
+    if (!soloRace) return;
+    const human = soloRace.racers.find((r) => !r.isAi);
+    if (!human) return;
+    soloMoves = getPossibleMoves(human.position, human.velocity);
+    centerOnPlayer(racerToPlayer(human));
+    updateHUD(human.name, `Tour ${soloRace.turn + 1}`, true);
+    renderSolo();
+  }
+  function renderSolo() {
+    if (!soloRace) return;
+    const players = soloRace.racers.map(racerToPlayer);
+    render(soloRace.circuit, players, soloMoves ?? [], "human");
+  }
+  function handleSoloEnd() {
+    if (!soloRace) return;
+    const race = soloRace;
+    const human = race.racers.find((r) => !r.isAi);
+    const place = getHumanPlace(race);
+    const noCrash = human ? !human.everCrashed : false;
+    const rewards = calculateRewards(place, noCrash, race.turn);
+    const won = place === 1;
+    updateProfileAfterGame(rewards, won).catch((err) => {
+      console.error("updateProfileAfterGame failed:", err);
+    });
+    const players = getFinalRanking(race).map(racerToPlayer);
+    showResultScreen(players, rewards);
+    soloRace = null;
+    soloMoves = null;
+  }
+  function racerToPlayer(r) {
+    return {
+      id: r.id,
+      game_id: "solo",
+      user_id: r.id,
+      name: r.name,
+      color: r.color,
+      skin: "default",
+      trail: "default",
+      position: r.position,
+      velocity: r.velocity,
+      status: r.status === "finished" ? "finished" : "alive",
+      finish_position: r.finishPosition,
+      skip_count: 0,
+      crash_turns_left: 0
+    };
+  }
 
   // src/shop.ts
   var SHOP_CATALOG = [
@@ -21710,7 +22033,7 @@ ${suffix}`;
     list.querySelectorAll(".circuit-play").forEach((btn) => {
       btn.addEventListener("click", () => {
         const c = findCircuit(btn.dataset.id);
-        if (c) startSolo(c);
+        if (c) startSolo2(c);
       });
     });
     list.querySelectorAll(".circuit-edit").forEach((btn) => {
@@ -21778,7 +22101,7 @@ ${suffix}`;
         setEditorMsg(res.error ?? "Circuit invalide.", true);
         return;
       }
-      startSolo(editorCircuit);
+      startSolo2(editorCircuit);
     });
     document.getElementById("btn-editor-save")?.addEventListener("click", () => {
       const nameInput = document.getElementById("editor-name");
@@ -21854,7 +22177,7 @@ ${suffix}`;
       }
     });
   }
-  function startSolo(circuit) {
+  function startSolo2(circuit) {
     soloCircuit = cloneCircuit(circuit);
     soloState = createSoloState(soloCircuit);
     showScreen("solo");
@@ -21905,7 +22228,8 @@ ${suffix}`;
     "quests",
     "circuits",
     "editor",
-    "solo"
+    "solo",
+    "solo-ai"
   ];
   function showScreen(id) {
     screens.forEach((s) => {
@@ -21928,6 +22252,26 @@ ${suffix}`;
   `;
   }
   async function init() {
+    let soloOpponentCount = 1;
+    const soloOptionBtns = Array.from(
+      document.querySelectorAll("#solo-ai-opponents .btn-opt")
+    );
+    const selectSoloOption = (btn) => {
+      soloOpponentCount = parseInt(btn.dataset.count ?? "1", 10) || 1;
+      soloOptionBtns.forEach((b) => b.classList.toggle("selected", b === btn));
+    };
+    soloOptionBtns.forEach((btn) => btn.addEventListener("click", () => selectSoloOption(btn)));
+    const defaultSoloBtn = soloOptionBtns.find((b) => b.dataset.count === "1");
+    if (defaultSoloBtn) selectSoloOption(defaultSoloBtn);
+    document.getElementById("btn-solo-ai")?.addEventListener("click", () => {
+      showScreen("solo-ai");
+    });
+    document.getElementById("btn-solo-ai-back")?.addEventListener("click", () => {
+      showScreen("home");
+    });
+    document.getElementById("btn-solo-ai-start")?.addEventListener("click", () => {
+      startSolo(soloOpponentCount);
+    });
     document.getElementById("btn-create")?.addEventListener("click", () => {
       handleCreateGame().catch(console.error);
     });

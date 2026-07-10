@@ -12,6 +12,17 @@ import {
   emptyState,
   activeEffectIndicators,
 } from './powerups';
+import * as circuitGen from './circuit';
+import {
+  createSoloRace,
+  currentRacer,
+  aiChooseMove,
+  applyMove,
+  isHumanTurn,
+  getFinalRanking,
+  getHumanPlace,
+} from './solo-ai';
+import type { SoloRace, SoloRacer } from './solo-ai';
 import { calculateRewards, updateProfileAfterGame } from './progression';
 import { notifyRaceFinished } from './quests-ui';
 import { showScreen } from './app';
@@ -402,4 +413,154 @@ function renderLobbyPlayers(players: Player[]): void {
       <span class="lobby-name">${p.name}</span>
     </div>
   `).join('');
+}
+
+// ---------------------------------------------------------------------------
+// Solo (contre IA) — boucle 100 % locale, sans réseau ni Supabase
+// ---------------------------------------------------------------------------
+
+const SOLO_WIDTH = 40;
+const SOLO_HEIGHT = 28;
+const SOLO_AI_DELAY = 350; // ms entre les coups IA (lisibilité)
+
+let soloRace: SoloRace | null = null;
+let soloMoves: MoveOption[] | null = null;
+let soloCanvasBound = false;
+
+/**
+ * Lance une course solo : circuit généré localement, joueur contre 1-3 IA.
+ * Aucun appel réseau — jouable hors-ligne.
+ */
+export function startSolo(opponentCount: number): void {
+  // Couper tout état multijoueur résiduel.
+  if (unsubscribe) {
+    unsubscribe();
+    unsubscribe = null;
+  }
+  currentGame = null;
+  currentPlayerId = null;
+  currentMoves = null;
+
+  const circuit = circuitGen.generateCircuit(SOLO_WIDTH, SOLO_HEIGHT);
+  const seed = (Date.now() & 0x7fffffff) >>> 0;
+  const playerName = profiles.getLocalName() || 'Vous';
+  soloRace = createSoloRace({ circuit, opponentCount, seed, playerName });
+
+  showScreen('game');
+  initSoloGameScreen();
+  promptHumanTurn();
+}
+
+function initSoloGameScreen(): void {
+  const canvas = document.getElementById('game-canvas') as HTMLCanvasElement | null;
+  if (!canvas) {
+    console.error('initSoloGameScreen: #game-canvas not found');
+    return;
+  }
+  grid.initGrid(canvas);
+  if (!soloCanvasBound) {
+    canvas.addEventListener('click', handleSoloTap);
+    soloCanvasBound = true;
+  }
+}
+
+function handleSoloTap(e: MouseEvent): void {
+  if (!soloRace || !soloMoves) return;
+  if (!isHumanTurn(soloRace)) return;
+
+  const canvas = e.currentTarget as HTMLCanvasElement;
+  const rect = canvas.getBoundingClientRect();
+  const g = grid.screenToGrid(e.clientX - rect.left, e.clientY - rect.top);
+
+  const move = soloMoves.find(m => m.target.x === g.x && m.target.y === g.y);
+  if (!move) return;
+
+  applyMove(soloRace, 'human', move);
+  soloMoves = null;
+  renderSolo();
+
+  if (soloRace.status === 'finished') {
+    handleSoloEnd();
+    return;
+  }
+  window.setTimeout(stepSoloAi, SOLO_AI_DELAY);
+}
+
+/** Avance les tours IA un par un (avec délai), jusqu'au tour du joueur ou la fin. */
+function stepSoloAi(): void {
+  if (!soloRace) return;
+
+  if (soloRace.status === 'finished') {
+    handleSoloEnd();
+    return;
+  }
+  if (isHumanTurn(soloRace)) {
+    promptHumanTurn();
+    return;
+  }
+
+  const racer = currentRacer(soloRace);
+  const move = aiChooseMove(soloRace, racer);
+  applyMove(soloRace, racer.id, move);
+  updateHUD(racer.name, `Tour ${soloRace.turn + 1}`, false);
+  renderSolo();
+
+  window.setTimeout(stepSoloAi, SOLO_AI_DELAY);
+}
+
+function promptHumanTurn(): void {
+  if (!soloRace) return;
+  const human = soloRace.racers.find(r => !r.isAi);
+  if (!human) return;
+
+  soloMoves = physics.getPossibleMoves(human.position, human.velocity);
+  grid.centerOnPlayer(racerToPlayer(human));
+  updateHUD(human.name, `Tour ${soloRace.turn + 1}`, true);
+  renderSolo();
+}
+
+function renderSolo(): void {
+  if (!soloRace) return;
+  const players = soloRace.racers.map(racerToPlayer);
+  grid.render(soloRace.circuit, players, soloMoves ?? [], 'human');
+}
+
+function handleSoloEnd(): void {
+  if (!soloRace) return;
+  const race = soloRace;
+
+  const human = race.racers.find(r => !r.isAi);
+  const place = getHumanPlace(race);
+  const noCrash = human ? !human.everCrashed : false;
+  const rewards = calculateRewards(place, noCrash, race.turn);
+  const won = place === 1;
+
+  updateProfileAfterGame(rewards, won).catch(err => {
+    console.error('updateProfileAfterGame failed:', err);
+  });
+
+  const players = getFinalRanking(race).map(racerToPlayer);
+  showResultScreen(players, rewards);
+
+  soloRace = null;
+  soloMoves = null;
+}
+
+/** Adapte un SoloRacer à la forme Player attendue par le rendu Canvas. */
+function racerToPlayer(r: SoloRacer): Player {
+  return {
+    id: r.id,
+    game_id: 'solo',
+    user_id: r.id,
+    name: r.name,
+    color: r.color,
+    skin: 'default',
+    trail: 'default',
+    position: r.position,
+    velocity: r.velocity,
+    status: r.status === 'finished' ? 'finished' : 'alive',
+    finish_position: r.finishPosition,
+    skip_count: 0,
+    crash_turns_left: 0,
+  };
 }
