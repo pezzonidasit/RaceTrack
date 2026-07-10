@@ -1,9 +1,17 @@
 import type { Game, Player, Profile } from './types';
 import type { MoveOption } from './physics';
+import type { PowerUp, PowerUpState } from './powerups';
 import * as physics from './physics';
 import * as grid from './grid';
 import * as multiplayer from './multiplayer';
 import * as profiles from './profiles';
+import {
+  POWERUPS_ENABLED,
+  placePowerUps,
+  resolveMove,
+  emptyState,
+  activeEffectIndicators,
+} from './powerups';
 import { calculateRewards, updateProfileAfterGame } from './progression';
 import { showScreen } from './app';
 
@@ -15,6 +23,37 @@ let currentGame: Game | null = null;
 let currentPlayerId: string | null = null;
 let currentMoves: MoveOption[] | null = null;
 let unsubscribe: (() => void) | null = null;
+
+// Power-ups are client-local in v1 (no realtime sync — see PRD scope). Each
+// client deterministically places the same set from the game code, then tracks
+// its own pickups and active effects.
+let localPowerUps: PowerUp[] = [];
+let localEffectState: PowerUpState = emptyState();
+let powerupsGameId: string | null = null;
+
+const POWERUP_COUNT = 6;
+
+/** Stable 32-bit hash of a string → deterministic seed per game code. */
+function hashSeed(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/** Place power-ups once per game (deterministic), reset on a new game. */
+function ensurePowerUps(game: Game): void {
+  if (!POWERUPS_ENABLED) {
+    localPowerUps = [];
+    return;
+  }
+  if (powerupsGameId === game.id) return;
+  powerupsGameId = game.id;
+  localEffectState = emptyState();
+  localPowerUps = placePowerUps(game.circuit, hashSeed(game.code || game.id), POWERUP_COUNT);
+}
 
 // ---------------------------------------------------------------------------
 // Game screen
@@ -68,20 +107,39 @@ async function executeMove(move: MoveOption): Promise<void> {
   const myPlayer = currentGame.players.find(p => p.id === currentPlayerId);
   if (!myPlayer) return;
 
-  // Calculate new position
-  const result = physics.calculateNewPosition(myPlayer.position, myPlayer.velocity, move.acceleration);
+  // Resolve the move. With power-ups enabled, run it through the engine so
+  // boost/shield/teleport affect the submitted position/velocity and pickups
+  // update the local effect state; otherwise fall back to plain physics.
+  const base = physics.calculateNewPosition(myPlayer.position, myPlayer.velocity, move.acceleration);
+  let newPosition = base.newPosition;
+  let newVelocity = base.newVelocity;
+  let crashed = physics.checkCollision(myPlayer.position, newPosition, currentGame.circuit.cells).crashed;
 
-  // Check collision
-  const collision = physics.checkCollision(myPlayer.position, result.newPosition, currentGame.circuit.cells);
+  if (POWERUPS_ENABLED) {
+    const r = resolveMove({
+      position: myPlayer.position,
+      velocity: myPlayer.velocity,
+      acceleration: move.acceleration,
+      cells: currentGame.circuit.cells,
+      centerline: currentGame.circuit.centerline,
+      powerups: localPowerUps,
+      state: localEffectState,
+    });
+    newPosition = r.position;
+    newVelocity = r.velocity;
+    crashed = r.crashed;
+    localPowerUps = r.powerups;
+    localEffectState = r.state;
+  }
 
   try {
     await multiplayer.submitMove(
       currentGame.id,
       currentPlayerId,
       move.acceleration,
-      result.newPosition,
-      result.newVelocity,
-      collision.crashed,
+      newPosition,
+      newVelocity,
+      crashed,
       currentGame.current_turn,
     );
   } catch (err) {
@@ -108,6 +166,8 @@ export async function refreshGameState(): Promise<void> {
     return;
   }
 
+  ensurePowerUps(currentGame);
+
   // Is it my turn?
   const currentPlayer = currentGame.players[currentGame.current_player_index];
   const isMyTurn = !!currentPlayerId && !!currentPlayer && currentPlayer.id === currentPlayerId;
@@ -130,6 +190,8 @@ export async function refreshGameState(): Promise<void> {
     currentGame.players,
     currentMoves,
     currentPlayerId ?? '',
+    localPowerUps,
+    activeEffectIndicators(localEffectState),
   );
 }
 

@@ -1,5 +1,6 @@
 import type { Vec2, Circuit, Player, CellType } from './types';
 import type { MoveOption } from './physics';
+import type { PowerUp, PowerUpType, EffectIndicator } from './powerups';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -12,6 +13,13 @@ const COLOR_MAP: Record<CellType, string> = {
   track:  '#2a2a4a',
   start:  '#3a5a3a',
   finish: '#5a3a3a',
+};
+
+// Power-up visual identity: fill color + single-glyph marker.
+const POWERUP_STYLE: Record<PowerUpType, { color: string; glyph: string }> = {
+  boost:    { color: '#FFD23F', glyph: '»' },
+  shield:   { color: '#3FA7FF', glyph: '◈' },
+  teleport: { color: '#C04FFF', glyph: '✦' },
 };
 
 // ---------------------------------------------------------------------------
@@ -158,7 +166,9 @@ export function render(
   circuit: Circuit,
   players: Player[],
   possibleMoves: MoveOption[],
-  _currentPlayerId: string  // reserved: future highlight for current player
+  _currentPlayerId: string,  // reserved: future highlight for current player
+  powerups: PowerUp[] = [],
+  indicators: EffectIndicator[] = [],
 ): void {
   if (!canvas || !ctx) return;
 
@@ -217,6 +227,35 @@ export function render(
     ctx.strokeRect(px + 0.5, py + 0.5, cellW - 1, cellH - 1);
   }
 
+  // --- Draw power-ups (pickups on the track) ---
+  for (const pu of powerups) {
+    const style = POWERUP_STYLE[pu.type];
+    const cx = pu.cell.x * cellW + cellW / 2;
+    const cy = pu.cell.y * cellH + cellH / 2;
+    const r = cellW * 0.32;
+
+    // Diamond pickup marker
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r);
+    ctx.lineTo(cx + r, cy);
+    ctx.lineTo(cx, cy + r);
+    ctx.lineTo(cx - r, cy);
+    ctx.closePath();
+    ctx.fillStyle = style.color;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+    ctx.lineWidth = 1 / camera.scale;
+    ctx.stroke();
+
+    // Glyph
+    const glyphSize = Math.max(8, 11 / camera.scale);
+    ctx.font = `bold ${glyphSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillText(style.glyph, cx, cy + 0.5);
+  }
+
   // --- Draw players ---
   for (const player of players) {
     if (player.status === 'kicked') continue;
@@ -252,6 +291,39 @@ export function render(
   }
 
   ctx.restore();
+
+  // --- Active-effect indicators (screen-space HUD, top-left) ---
+  if (indicators.length > 0) {
+    ctx.save();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 13px sans-serif';
+    let bx = 10;
+    const by = 14;
+    for (const ind of indicators) {
+      const style = POWERUP_STYLE[ind.type];
+      const padX = 8;
+      const w = ctx.measureText(ind.text).width + padX * 2 + 16;
+      const h = 22;
+
+      // Badge background
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(bx, by - h / 2, w, h);
+      ctx.fillStyle = style.color;
+      ctx.fillRect(bx, by - h / 2, 4, h); // colored accent bar
+
+      // Colored dot + label
+      ctx.beginPath();
+      ctx.arc(bx + padX + 6, by, 5, 0, Math.PI * 2);
+      ctx.fillStyle = style.color;
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(ind.text, bx + padX + 16, by + 0.5);
+
+      bx += w + 8;
+    }
+    ctx.restore();
+  }
 }
 
 export function screenToGrid(screenX: number, screenY: number): Vec2 {

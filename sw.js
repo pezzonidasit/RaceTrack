@@ -1,4 +1,4 @@
-const CACHE_NAME = 'racetrack-v1';
+const CACHE_NAME = 'racetrack-v2-powerups';
 const ASSETS = ['./', './index.html', './css/style.css', './dist/bundle.js', './manifest.json'];
 
 self.addEventListener('install', (event) => {
